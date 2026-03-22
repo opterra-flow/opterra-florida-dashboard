@@ -1,0 +1,16 @@
+{
+  "name": "Opterra Florida",
+  "short_name": "Opterra FL",
+  "description": "Florida field sales dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1A3A2F",
+  "theme_color": "#1A3A2F",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

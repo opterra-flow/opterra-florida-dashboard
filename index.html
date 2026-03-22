@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Opterra FL">
+<meta name="theme-color" content="#1A3A2F">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Opterra Florida — Internal Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1A3A2F; --surface: #132a1f; --surface2: #0a1510; --border: #2a5040;
+  --text: #FAF9F6; --text-dim: #8aaa98; --accent: #D4E157; --accent2: #C9A961;
+  --green: #6fcf97; --orange: #e0a84e; --red: #e57373; --pink: #C9A961;
+  --cream: #FAF9F6; --charcoal: #2D2D2D; --forest: #1A3A2F; --lime: #D4E157; --gold: #C9A961;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Montserrat',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); line-height:1.5; padding:24px; min-height:100vh; }
+.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+.header h1 { font-family:'Playfair Display',Georgia,serif; font-size:24px; font-weight:700; letter-spacing:-0.3px; }
+.header h1 span { color:var(--lime); }
+.header .badge { background:var(--gold); color:var(--forest); font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; }
+.header .meta { font-size:12px; color:var(--text-dim); }
+.kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:28px; }
+.kpi { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+.kpi .label { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px; }
+.kpi .value { font-size:28px; font-weight:700; letter-spacing:-1px; }
+.kpi .sub { font-size:12px; color:var(--text-dim); margin-top:4px; }
+.kpi .value.accent { color:var(--accent); }
+.kpi .value.green { color:var(--green); }
+.kpi .value.orange { color:var(--orange); }
+.kpi .value.pink { color:var(--pink); }
+.section { margin-bottom:28px; }
+.section-title { font-size:14px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.section-title::before { content:''; width:3px; height:14px; background:var(--lime); border-radius:2px; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}}
+.bar-chart { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+.bar-item { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.bar-item:last-child { margin-bottom:0; }
+.bar-label { font-size:13px; width:160px; flex-shrink:0; }
+.bar-track { flex:1; height:22px; background:var(--surface2); border-radius:6px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:6px; display:flex; align-items:center; padding-left:8px; font-size:11px; font-weight:600; color:#fff; min-width:30px; }
+.city-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+.city-chip { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all 0.2s; }
+.city-chip:hover { border-color:var(--accent); background:var(--surface2); }
+.city-chip.active { border-color:var(--accent); background:var(--surface2); box-shadow:0 0 0 1px var(--accent); }
+.city-chip .name { font-size:13px; }
+.city-chip .count { font-size:13px; font-weight:700; color:var(--accent); }
+.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.table-controls { padding:14px 18px; display:flex; gap:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.table-controls input,.table-controls select { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:7px 12px; border-radius:8px; font-size:13px; outline:none; }
+.table-controls input:focus,.table-controls select:focus { border-color:var(--accent); }
+.table-controls input { flex:1; min-width:180px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead th { text-align:left; padding:10px 14px; font-size:11px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; white-space:nowrap; }
+thead th:hover { color:var(--accent); }
+tbody tr { border-bottom:1px solid var(--border); transition:background 0.15s; }
+tbody tr:last-child { border-bottom:none; }
+tbody tr:hover { background:var(--surface2); }
+td { padding:10px 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
+td.clickable { cursor:pointer; }
+td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
+.tag { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+.tag-holistic { background:#1a3a2f; color:#6fcf97; border:1px solid #2a5040; }
+.tag-med_spa { background:#2a1a3a; color:#C9A961; border:1px solid #3a2a4a; }
+.tag-chiro { background:#1a2a3a; color:#7ec8e3; border:1px solid #2a3a4a; }
+.tag-acupuncture { background:#3a2a1a; color:#e0a84e; border:1px solid #4a3a2a; }
+.tag-massage { background:#1a3a3a; color:#6fd4d4; border:1px solid #2a4a4a; }
+.tag-biohack { background:#3a3a1a; color:#D4E157; border:1px solid #4a4a2a; }
+.tag-default { background:var(--surface2); color:var(--text-dim); border:1px solid var(--border); }
+.tag-cold-called { background:#1a2a3a; color:#7ec8e3; border:1px solid #2a3a5a; }
+.tag-guerrilla { background:#2a1a3a; color:#c0a0e0; border:1px solid #3a2a4a; }
+.tag-demo-booked { background:#1a3a20; color:var(--lime); border:1px solid #2a5030; }
+.status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+.dot-has { background:var(--green); }
+.dot-missing { background:var(--red); opacity:0.5; }
+.activity-list { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:4px 0; }
+.activity-item { padding:12px 18px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border); }
+.activity-item:last-child { border-bottom:none; }
+.activity-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; }
+.activity-icon.sms { background:#1b5e20; } .activity-icon.email { background:#0d47a1; } .activity-icon.noshow { background:#b71c1c; } .activity-icon.ig { background:#880e4f; }
+.activity-body { flex:1; min-width:0; } .activity-body .name { font-size:13px; font-weight:600; } .activity-body .detail { font-size:12px; color:var(--text-dim); }
+.activity-time { font-size:11px; color:var(--text-dim); flex-shrink:0; }
+.workflow-list { display:grid; gap:8px; }
+.workflow-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; }
+.workflow-card .wf-name { font-size:13px; font-weight:600; }
+.workflow-card .wf-status { font-size:11px; font-weight:600; padding:3px 10px; border-radius:12px; text-transform:uppercase; }
+.wf-published { background:var(--surface2); color:var(--lime); border:1px solid var(--border); }
+.pipeline { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+@media(max-width:700px){.pipeline{grid-template-columns:repeat(2,1fr);}}
+.stage { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px; text-align:center; }
+.stage .stage-name { font-size:12px; color:var(--text-dim); margin-bottom:6px; } .stage .stage-count { font-size:24px; font-weight:700; }
+.footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--border); font-size:11px; color:var(--text-dim); text-align:center; }
+.confidential-banner { background:linear-gradient(90deg,var(--surface2),var(--forest)); color:var(--gold); text-align:center; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px; border-radius:8px; margin-bottom:20px; }
+.outreach-select { background:var(--surface2); border:1px solid var(--border); color:var(--text-dim); padding:4px 8px; border-radius:6px; font-size:11px; outline:none; cursor:pointer; min-width:130px; }
+.outreach-select:focus { border-color:var(--accent); }
+.outreach-select.tagged { border-color:var(--green); color:var(--green); }
+.outreach-select.saving { border-color:var(--orange); color:var(--orange); }
+.outreach-select.error { border-color:var(--red); color:var(--red); }
+.toast-container { position:fixed; bottom:24px; right:24px; z-index:1000; display:flex; flex-direction:column; gap:8px; }
+.toast { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 18px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,0.4); animation:slideIn 0.3s ease; max-width:340px; }
+.toast.success { border-color:var(--lime); } .toast.error { border-color:var(--red); }
+.toast .toast-title { font-weight:600; margin-bottom:2px; } .toast .toast-detail { font-size:11px; color:var(--text-dim); }
+@keyframes slideIn { from{transform:translateX(100px);opacity:0} to{transform:translateX(0);opacity:1} }
+.city-filter-active { background:var(--accent); color:var(--bg); font-size:11px; font-weight:600; padding:4px 12px; border-radius:20px; cursor:pointer; display:none; align-items:center; gap:6px; }
+.city-filter-active:hover { opacity:0.8; }
+.stage-select { background:var(--surface2); border:1px solid var(--border); color:var(--text-dim); padding:4px 8px; border-radius:6px; font-size:11px; outline:none; cursor:pointer; min-width:120px; }
+.stage-select:focus { border-color:var(--accent); }
+.stage-select.in-pipeline { border-color:var(--accent); color:var(--accent); }
+.stage-select.saving { border-color:var(--orange); color:var(--orange); }
+.stage-select.s-new-lead { border-color:var(--lime); color:var(--lime); }
+.stage-select.s-cold-called { border-color:#7ec8e3; color:#7ec8e3; }
+.stage-select.s-contacted { border-color:var(--gold); color:var(--gold); }
+.stage-select.s-call-booked { border-color:#e0a84e; color:#e0a84e; }
+.stage-select.s-proposal-sent { border-color:#c0a0e0; color:#c0a0e0; }
+.stage-select.s-closed { border-color:var(--green); color:var(--green); }
+/* Voice memo */
+.voice-section { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:28px; }
+.voice-controls { display:flex; align-items:center; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+.voice-btn { border:none; border-radius:50%; width:52px; height:52px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:20px; transition:all 0.2s; flex-shrink:0; }
+.voice-btn.record { background:var(--lime); color:var(--forest); }
+.voice-btn.record:hover { box-shadow:0 0 20px rgba(212,225,87,0.4); }
+.voice-btn.record.recording { background:var(--red); color:#fff; animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(229,115,115,0.5)} 50%{box-shadow:0 0 0 12px rgba(229,115,115,0)} }
+.voice-btn.stop { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+.voice-btn.stop:hover { border-color:var(--lime); }
+.voice-timer { font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--text-dim); min-width:60px; }
+.voice-contact-select { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:8px 14px; border-radius:8px; font-size:13px; outline:none; flex:1; min-width:200px; font-family:'Montserrat',sans-serif; }
+.voice-contact-select:focus { border-color:var(--lime); }
+.voice-transcript-box { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; min-height:80px; font-size:13px; line-height:1.7; color:var(--text); margin-bottom:14px; white-space:pre-wrap; word-wrap:break-word; outline:none; transition:border-color 0.2s; }
+.voice-transcript-box.empty { color:var(--text-dim); font-style:italic; }
+.voice-transcript-box.editable { border-color:var(--gold); cursor:text; }
+.voice-transcript-box.editable:focus { border-color:var(--lime); box-shadow:0 0 0 2px rgba(212,225,87,0.15); }
+.voice-assign-tag { display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:16px; font-size:11px; font-weight:600; }
+.voice-assign-tag.lilly { background:#1a2a3a; color:#7ec8e3; border:1px solid #2a3a5a; }
+.voice-assign-tag.mikyla { background:#2a1a3a; color:#c0a0e0; border:1px solid #3a2a4a; }
+.voice-recap { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:14px; display:none; }
+.voice-recap h4 { font-size:12px; text-transform:uppercase; letter-spacing:0.6px; color:var(--gold); margin-bottom:8px; }
+.voice-recap ul { list-style:none; padding:0; }
+.voice-recap ul li { font-size:13px; padding:4px 0; padding-left:16px; position:relative; color:var(--text); }
+.voice-recap ul li::before { content:''; position:absolute; left:0; top:11px; width:6px; height:6px; border-radius:50%; background:var(--lime); }
+.voice-save-btn { background:var(--lime); color:var(--forest); border:none; padding:10px 24px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:'Montserrat',sans-serif; transition:opacity 0.2s; }
+.voice-save-btn:hover { opacity:0.85; }
+.voice-save-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.voice-save-btn.saving { background:var(--gold); }
+.voice-save-btn.saved { background:var(--green); }
+/* Add contact form */
+.add-form { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.add-form .full-width { grid-column:1/-1; }
+.add-form label { font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-dim); display:block; margin-bottom:4px; }
+.add-form input, .add-form select, .add-form textarea {
+  background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:9px 12px;
+  border-radius:8px; font-size:13px; outline:none; width:100%; font-family:'Montserrat',sans-serif;
+}
+.add-form input:focus, .add-form select:focus, .add-form textarea:focus { border-color:var(--lime); }
+.add-form textarea { resize:vertical; min-height:60px; }
+.add-form-actions { grid-column:1/-1; display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
+.add-form-actions button { padding:10px 24px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:'Montserrat',sans-serif; }
+.add-cancel-btn { background:var(--surface2); color:var(--text-dim); border:1px solid var(--border) !important; }
+.add-cancel-btn:hover { border-color:var(--text-dim) !important; }
+.add-submit-btn { background:var(--lime); color:var(--forest); }
+.add-submit-btn:hover { opacity:0.85; }
+.add-submit-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* Detail panel overlay */
+.detail-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; display:none; justify-content:center; align-items:flex-start; padding:40px 20px; overflow-y:auto; }
+.detail-overlay.open { display:flex; }
+.detail-panel { background:var(--bg); border:1px solid var(--border); border-radius:16px; max-width:720px; width:100%; padding:0; animation:panelIn 0.25s ease; }
+@keyframes panelIn { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+.detail-header { padding:24px 28px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; }
+.detail-header h2 { font-family:'Playfair Display',Georgia,serif; font-size:22px; font-weight:700; }
+.detail-header .company-name { font-size:14px; color:var(--lime); margin-top:2px; }
+.detail-header .close-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text-dim); width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
+.detail-header .close-btn:hover { color:var(--text); border-color:var(--accent); }
+.detail-body { padding:24px 28px; }
+.detail-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+.detail-field { }
+.detail-field .df-label { font-size:10px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-dim); margin-bottom:4px; }
+.detail-field .df-value { font-size:13px; }
+.detail-field .df-value a { color:var(--accent); text-decoration:none; }
+.detail-field .df-value a:hover { text-decoration:underline; }
+.detail-section { margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
+.detail-section h3 { font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-dim); margin-bottom:10px; }
+.detail-section p { font-size:13px; color:var(--text); line-height:1.6; margin-bottom:10px; white-space:pre-wrap; word-wrap:break-word; }
+.detail-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.detail-kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:16px; }
+.detail-kpi { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center; }
+.detail-kpi .dk-val { font-size:20px; font-weight:700; color:var(--lime); }
+.detail-kpi .dk-label { font-size:10px; color:var(--text-dim); text-transform:uppercase; margin-top:2px; }
+/* ====== MOBILE RESPONSIVE ====== */
+@media(max-width:768px) {
+  body { padding:12px; }
+  .header { flex-direction:column; align-items:flex-start; gap:12px; }
+  .header h1 { font-size:20px; }
+  .header > div:last-child { text-align:left; }
+  .kpi-row { grid-template-columns:repeat(2, 1fr); gap:10px; }
+  .kpi { padding:14px; }
+  .kpi .value { font-size:22px; }
+  .kpi .value[style*="font-size:18px"] { font-size:15px !important; }
+  .two-col { grid-template-columns:1fr; }
+  .bar-label { width:110px; font-size:12px; }
+  .city-grid { grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:6px; }
+  .city-chip { padding:8px 10px; }
+  .city-chip .name { font-size:12px; }
+  .section-title { font-size:12px; flex-wrap:wrap; }
+  /* Voice memo */
+  .voice-section { padding:16px; }
+  .voice-controls { flex-direction:column; align-items:stretch; gap:10px; }
+  .voice-controls > .voice-btn { align-self:center; }
+  .voice-timer { text-align:center; }
+  .voice-contact-select { min-width:100%; }
+  .voice-save-btn { width:100%; text-align:center; }
+  .voice-transcript-box { font-size:13px; min-height:60px; }
+  /* Table */
+  .table-controls { flex-direction:column; }
+  .table-controls input { min-width:100%; }
+  .table-controls select { width:100%; }
+  table { font-size:12px; }
+  thead th { padding:8px 8px; font-size:10px; }
+  td { padding:8px 8px; max-width:140px; font-size:12px; }
+  .tag { font-size:10px; padding:2px 6px; }
+  .stage-select, .outreach-select { font-size:10px; min-width:100px; padding:3px 5px; }
+  /* Detail panel */
+  .detail-overlay { padding:12px 8px; }
+  .detail-panel { border-radius:12px; }
+  .detail-header { padding:16px 16px 14px; }
+  .detail-header h2 { font-size:18px; }
+  .detail-body { padding:16px; }
+  .detail-row { grid-template-columns:1fr; gap:12px; }
+  .detail-kpi-row { grid-template-columns:repeat(2, 1fr); gap:8px; }
+  .detail-kpi { padding:10px; }
+  .detail-kpi .dk-val { font-size:18px; }
+  .detail-section p { font-size:12px; }
+  .detail-section ul li { font-size:12px; }
+  /* Add contact form */
+  .add-form { grid-template-columns:1fr; }
+  .add-form-actions { flex-direction:column; }
+  .add-form-actions button { width:100%; }
+  /* Book demo button */
+  div[style*="margin-bottom:24px"] a { width:100%; text-align:center; padding:16px 20px !important; font-size:15px !important; }
+  /* New lead button */
+  .section-title button[onclick="openAddContact()"] { width:100%; justify-content:center; margin-top:8px; padding:10px 20px !important; }
+  /* Footer */
+  .footer { font-size:10px; }
+  .confidential-banner { font-size:9px; letter-spacing:1px; }
+  /* Toast */
+  .toast-container { left:12px; right:12px; bottom:12px; }
+  .toast { max-width:100%; }
+}
+@media(max-width:480px) {
+  body { padding:8px; }
+  .kpi-row { grid-template-columns:1fr 1fr; gap:8px; }
+  .kpi { padding:12px; }
+  .kpi .value { font-size:20px; }
+  .kpi .label { font-size:10px; }
+  .kpi .sub { font-size:10px; }
+  .city-grid { grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); }
+  .header h1 { font-size:18px; }
+  thead th { font-size:9px; padding:6px 5px; }
+  td { padding:6px 5px; max-width:100px; font-size:11px; }
+  .stage-select { font-size:9px; min-width:85px; }
+  .detail-header h2 { font-size:16px; }
+}
+</style>
+</head>
+<body>
+<div class="confidential-banner">CONFIDENTIAL — INTERNAL USE ONLY — OPTERRA</div>
+<div class="header">
+  <div>
+    <h1><span>Opterra</span> Florida Market Dashboard</h1>
+    <div class="meta">GoHighLevel Sub-Account: i9NF6R1xk7vXmT8NUW3B &middot; Pulled 2026-03-22</div>
+  </div>
+  <div style="text-align:right">
+    <div class="badge">Live CRM Data</div>
+    <div class="meta" style="margin-top:6px">39 Florida Leads &middot; 1,015 Total CRM</div>
+  </div>
+</div>
+
+<div style="margin-bottom:24px">
+  <a href="https://api.leadconnectorhq.com/widget/bookings/mikyla-meckelson-personal-calendar-q3z_uqgdq" target="_blank" style="display:inline-flex;align-items:center;gap:10px;background:var(--lime);color:var(--forest);padding:14px 28px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;font-family:'Montserrat',sans-serif;transition:opacity 0.2s;box-shadow:0 4px 16px rgba(212,225,87,0.25)" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Book Demo Call &rarr;</a>
+</div>
+
+<div class="section">
+  <div class="section-title">Voice Memo</div>
+  <div class="voice-section">
+    <div class="voice-controls">
+      <button class="voice-btn record" id="voiceRecordBtn" onclick="toggleRecording()">&#9679;</button>
+      <div class="voice-timer" id="voiceTimer">0:00</div>
+      <select class="voice-contact-select" id="voiceContactSelect">
+        <option value="">Select a contact to attach memo...</option>
+      </select>
+      <button class="voice-save-btn" id="voiceSaveBtn" onclick="saveVoiceMemo()" disabled>Save to GHL</button>
+    </div>
+    <div class="voice-transcript-box empty" id="voiceTranscript" contenteditable="false">Hit record, talk about the lead, and we'll transcribe + summarize it for you.</div>
+    <div id="voiceAssignBadge" style="display:none;margin-bottom:10px;display:none;align-items:center;gap:8px;flex-wrap:wrap"></div>
+    <div class="voice-recap" id="voiceRecap"><h4>Recap</h4><ul id="voiceRecapList"></ul></div>
+  </div>
+</div>
+
+<div class="section" id="contactsSection">
+  <div class="section-title">All Florida Contacts (<span id="contactCountLabel">39</span>) <span class="city-filter-active" id="cityFilterBadge" onclick="clearCityFilter()"></span>
+    <button onclick="openAddContact()" style="margin-left:auto;background:var(--lime);color:var(--forest);border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Montserrat',sans-serif;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'" title="Add new lead"><span style="font-size:18px;line-height:1">+</span> NEW LEAD</button>
+  </div>
+  <div class="table-wrap">
+    <div class="table-controls">
+      <input type="text" id="searchInput" placeholder="Search name, company, city..." oninput="filterTable()">
+      <select id="segmentFilter" onchange="filterTable()"><option value="">All Segments</option><option value="holistic_medical">Holistic Medical</option><option value="med_spa">Med Spa</option><option value="chiro">Chiropractic</option><option value="biohacking_recovery">Biohacking / Recovery</option><option value="acupuncture">Acupuncture</option><option value="massage_therapy">Massage Therapy</option></select>
+      <select id="cityFilter" onchange="filterTable();syncCityChips();"><option value="">All Cities</option><option value="Tampa">Tampa</option><option value="Orlando">Orlando</option><option value="Boca Raton">Boca Raton</option><option value="Maitland">Maitland</option><option value="Jacksonville">Jacksonville</option><option value="Miami">Miami</option><option value="Palm Beach Gardens">Palm Beach</option><option value="Oviedo">Oviedo</option></select>
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table id="flTable">
+        <thead><tr>
+          <th onclick="sortTable(0)">Contact</th><th onclick="sortTable(1)">Company</th><th onclick="sortTable(2)">City</th><th>Phone</th><th>Email</th><th>Segment</th><th>Stage</th><th onclick="sortTable(7)">Added</th>
+        </tr></thead>
+        <tbody id="flBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="label">Florida Leads</div><div class="value accent">39</div><div class="sub">3.8% of total CRM (1,015)</div></div>
+  <div class="kpi"><div class="label">With Phone</div><div class="value green">39</div><div class="sub">100% capture rate</div></div>
+  <div class="kpi"><div class="label">With Email</div><div class="value orange">10</div><div class="sub">25.6% — needs enrichment</div></div>
+  <div class="kpi"><div class="label">Cities Covered</div><div class="value pink">21</div><div class="sub">Across 5 metro areas</div></div>
+  <div class="kpi"><div class="label">Top Segment</div><div class="value" style="font-size:18px;color:var(--green)">Holistic Medical</div><div class="sub">26 of 39 contacts (66.7%)</div></div>
+  <div class="kpi"><div class="label">Lead Source</div><div class="value" style="font-size:18px;color:var(--accent)">Optiflow</div><div class="sub">100% from lead gen system</div></div>
+</div>
+
+<div class="two-col section">
+  <div>
+    <div class="section-title">Segment Breakdown (Florida)</div>
+    <div class="bar-chart">
+      <div class="bar-item"><div class="bar-label">Holistic Medical</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:linear-gradient(90deg,#1A3A2F,#6fcf97)">26</div></div></div>
+      <div class="bar-item"><div class="bar-label">Med Spa</div><div class="bar-track"><div class="bar-fill" style="width:15.4%;background:linear-gradient(90deg,#3a2a1a,#C9A961)">4</div></div></div>
+      <div class="bar-item"><div class="bar-label">Chiropractic</div><div class="bar-track"><div class="bar-fill" style="width:15.4%;background:linear-gradient(90deg,#1a2a3a,#7ec8e3)">4</div></div></div>
+      <div class="bar-item"><div class="bar-label">Biohacking / Recovery</div><div class="bar-track"><div class="bar-fill" style="width:11.5%;background:linear-gradient(90deg,#3a3a1a,#D4E157)">3</div></div></div>
+      <div class="bar-item"><div class="bar-label">Acupuncture</div><div class="bar-track"><div class="bar-fill" style="width:3.8%;background:linear-gradient(90deg,#3a2a1a,#e0a84e)">1</div></div></div>
+      <div class="bar-item"><div class="bar-label">Massage Therapy</div><div class="bar-track"><div class="bar-fill" style="width:3.8%;background:linear-gradient(90deg,#1a3a3a,#6fd4d4)">1</div></div></div>
+    </div>
+  </div>
+  <div>
+    <div class="section-title">Florida Cities <span style="font-size:11px;font-weight:400;color:var(--text-dim);text-transform:none;letter-spacing:0"> — click to filter</span></div>
+    <div class="city-grid" id="cityGrid">
+      <div class="city-chip" onclick="clickCity('Tampa')"><span class="name">Tampa</span><span class="count">7</span></div>
+      <div class="city-chip" onclick="clickCity('Orlando')"><span class="name">Orlando</span><span class="count">4</span></div>
+      <div class="city-chip" onclick="clickCity('Boca Raton')"><span class="name">Boca Raton</span><span class="count">3</span></div>
+      <div class="city-chip" onclick="clickCity('Maitland')"><span class="name">Maitland</span><span class="count">3</span></div>
+      <div class="city-chip" onclick="clickCity('Jacksonville')"><span class="name">Jacksonville</span><span class="count">3</span></div>
+      <div class="city-chip" onclick="clickCity('Oviedo')"><span class="name">Oviedo</span><span class="count">2</span></div>
+      <div class="city-chip" onclick="clickCity('Palm Beach Gardens')"><span class="name">Palm Beach Gdns</span><span class="count">2</span></div>
+      <div class="city-chip" onclick="clickCity('Miami')"><span class="name">Miami</span><span class="count">2</span></div>
+      <div class="city-chip" onclick="clickCity('Wesley Chapel')"><span class="name">Wesley Chapel</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('Tequesta')"><span class="name">Tequesta</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('Hollywood')"><span class="name">Hollywood</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('Panama City')"><span class="name">Panama City</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('West Palm Beach')"><span class="name">W. Palm Beach</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('North Lauderdale')"><span class="name">N. Lauderdale</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('Clermont')"><span class="name">Clermont</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('Fort Lauderdale')"><span class="name">Ft. Lauderdale</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('Clearwater')"><span class="name">Clearwater</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('North Port')"><span class="name">North Port</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('Doral')"><span class="name">Doral</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('Miami Beach')"><span class="name">Miami Beach</span><span class="count">1</span></div>
+      <div class="city-chip" onclick="clickCity('Fleming Island')"><span class="name">Fleming Island</span><span class="count">1</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Opterra Internal Dashboard &middot; Data from GoHighLevel API &middot; Generated 2026-03-22 &middot; Do not distribute externally</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Detail panel overlay -->
+<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-panel" id="detailPanel"></div>
+</div>
+
+<script>
+var floridaContacts = [];
+
+var GHL_API = 'https://services.leadconnectorhq.com';
+var GHL_KEY = 'pit-aeebc357-2a75-444a-ba16-b56bfad695f3';
+var GHL_LOC = 'i9NF6R1xk7vXmT8NUW3B';
+var PIPELINE_ID = 'BjOb6oh133vA1zjVZMjJ';
+var STAGES = {
+  'new-lead':      {id:'a99470c6-18a1-4983-b39b-d542d673a3d8', label:'New Lead'},
+  'cold-called':   {id:'28d8f208-5128-4c4d-8f28-6e0f1138b3e4', label:'Cold Called'},
+  'contacted':     {id:'79bd15bd-ee53-4ec0-9a57-60e392dddf65', label:'Contacted'},
+  'call-booked':   {id:'1bcdd205-4158-43d1-9635-26b47dbd2258', label:'Call Booked'},
+  'proposal-sent': {id:'9442be38-5c9e-48f8-ac88-642bba9daac2', label:'Proposal Sent'},
+  'closed':        {id:'1e5c8b73-301b-4b76-9b1f-c9411f8db16c', label:'Closed'},
+};
+var STAGE_KEYS = ['new-lead','cold-called','contacted','call-booked','proposal-sent','closed'];
+var OUTREACH_TAGS = ['cold-called','guerrilla-marketing','demo-booked'];
+
+// On load: fetch current tags + opportunities from GHL
+function loadOutreachFromGHL() {
+  floridaContacts.forEach(function(c, i) {
+    fetch(GHL_API + '/contacts/' + c.ghlId, {
+      headers: { 'Authorization': 'Bearer ' + GHL_KEY, 'Version': '2021-07-28' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var contact = data.contact || data;
+      var tags = contact.tags || [];
+      var found = '';
+      OUTREACH_TAGS.forEach(function(ot) { if (tags.indexOf(ot) !== -1) found = ot; });
+      if (found !== c.outreach) {
+        c.outreach = found;
+        var sel = document.querySelector('[data-outreach-idx="'+i+'"]');
+        if (sel) { sel.value = found; sel.className = found ? 'outreach-select tagged' : 'outreach-select'; }
+      }
+      if (!c.email && contact.email) { c.email = contact.email; }
+    })
+    .catch(function(){});
+  });
+  // Load existing opportunities to set pipeline stages
+  loadPipelineFromGHL();
+}
+
+function loadPipelineFromGHL() {
+  fetch(GHL_API + '/opportunities/search?locationId=' + GHL_LOC + '&pipelineId=' + PIPELINE_ID + '&limit=100', {
+    headers: { 'Authorization': 'Bearer ' + GHL_KEY, 'Version': '2021-07-28' }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var opps = data.opportunities || [];
+    opps.forEach(function(opp) {
+      var cid = opp.contactId || (opp.contact && opp.contact.id);
+      if (!cid) return;
+      var contact = floridaContacts.find(function(c){ return c.ghlId === cid; });
+      if (!contact) return;
+      contact.oppId = opp.id;
+      contact.stageId = opp.pipelineStageId || '';
+      // Map stageId to our key
+      STAGE_KEYS.forEach(function(sk) {
+        if (STAGES[sk].id === contact.stageId) contact.stage = sk;
+      });
+    });
+    renderTable(floridaContacts);
+    updatePipelineCounts();
+  })
+  .catch(function(){});
+}
+
+function updatePipelineCounts() {
+  // Pipeline viz removed — counts tracked in GHL
+}
+
+function onStageChange(idx, selectEl) {
+  var c = floridaContacts[idx];
+  var newStage = selectEl.value;
+  var oldStage = c.stage || '';
+  if (newStage === oldStage) return;
+  selectEl.className = 'stage-select saving';
+
+  if (!newStage) {
+    // Remove from pipeline — not supported easily, just leave it
+    showToast('Note', 'To remove from pipeline, do it in GHL directly', 'error');
+    selectEl.value = oldStage;
+    selectEl.className = oldStage ? 'stage-select s-' + oldStage : 'stage-select';
+    return;
+  }
+
+  var stageId = STAGES[newStage].id;
+
+  if (c.oppId) {
+    // Update existing opportunity
+    fetch(GHL_API + '/opportunities/' + c.oppId, {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + GHL_KEY, 'Version': '2021-07-28', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stageId: stageId })
+    })
+    .then(function(r) { return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+    .then(function(res) {
+      if (!res.ok) { throw new Error('API error'); }
+      c.stage = newStage;
+      c.stageId = stageId;
+      selectEl.className = 'stage-select s-' + newStage;
+      showToast('Pipeline updated', c.name + ' → ' + STAGES[newStage].label, 'success');
+      updatePipelineCounts();
+    })
+    .catch(function() {
+      selectEl.value = oldStage;
+      selectEl.className = oldStage ? 'stage-select s-' + oldStage : 'stage-select';
+      showToast('Failed to update', c.name, 'error');
+    });
+  } else {
+    // Create new opportunity
+    var oppName = (c.company || c.name) + ' - Florida Lead';
+    fetch(GHL_API + '/opportunities/', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + GHL_KEY, 'Version': '2021-07-28', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pipelineId: PIPELINE_ID,
+        locationId: GHL_LOC,
+        name: oppName,
+        stageId: stageId,
+        status: 'open',
+        contactId: c.ghlId,
+        source: 'Florida Dashboard'
+      })
+    })
+    .then(function(r) { return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+    .then(function(res) {
+      if (!res.ok) { throw new Error('API error'); }
+      var opp = res.data.opportunity || res.data;
+      c.oppId = opp.id;
+      c.stage = newStage;
+      c.stageId = stageId;
+      selectEl.className = 'stage-select s-' + newStage;
+      showToast('Added to pipeline', c.name + ' → ' + STAGES[newStage].label, 'success');
+      updatePipelineCounts();
+    })
+    .catch(function() {
+      selectEl.value = oldStage;
+      selectEl.className = oldStage ? 'stage-select s-' + oldStage : 'stage-select';
+      showToast('Failed to create deal', c.name, 'error');
+    });
+  }
+}
+
+function tagClass(t) {
+  if (t.includes('holistic')) return 'tag-holistic';
+  if (t.includes('med_spa')) return 'tag-med_spa';
+  if (t.includes('chiro')) return 'tag-chiro';
+  if (t.includes('acupuncture')) return 'tag-acupuncture';
+  if (t.includes('massage')) return 'tag-massage';
+  if (t.includes('biohack')) return 'tag-biohack';
+  if (t === 'cold-called') return 'tag-cold-called';
+  if (t === 'guerrilla-marketing') return 'tag-guerrilla';
+  if (t === 'demo-booked') return 'tag-demo-booked';
+  return 'tag-default';
+}
+function tagLabel(t) {
+  var m = {holistic_medical:'Holistic',med_spa:'Med Spa',chiro:'Chiro',acupuncture:'Acupuncture',massage_therapy:'Massage',biohacking_recovery:'Biohacking','cold-called':'Cold Called','guerrilla-marketing':'Guerrilla','demo-booked':'Demo Booked'};
+  return m[t] || t;
+}
+function formatPhone(p) {
+  if (!p) return '<span style="color:var(--text-dim)">-</span>';
+  var d = p.replace(/\D/g,'');
+  if (d.length===11) return '('+d.slice(1,4)+') '+d.slice(4,7)+'-'+d.slice(7);
+  return p;
+}
+
+function showToast(title, detail, type) {
+  var c = document.getElementById('toastContainer');
+  var t = document.createElement('div');
+  t.className = 'toast '+(type||'');
+  t.innerHTML = '<div class="toast-title">'+title+'</div><div class="toast-detail">'+detail+'</div>';
+  c.appendChild(t);
+  setTimeout(function(){ t.style.opacity='0'; t.style.transition='opacity 0.3s'; setTimeout(function(){ t.remove(); },300); },4000);
+}
+
+function addTagToGHL(cid, tag, cb) {
+  fetch(GHL_API+'/contacts/'+cid+'/tags', {
+    method:'POST', headers:{'Authorization':'Bearer '+GHL_KEY,'Version':'2021-07-28','Content-Type':'application/json'},
+    body:JSON.stringify({tags:[tag]})
+  }).then(function(r){return r.json().then(function(d){return{ok:r.ok,data:d}});}).then(function(r){cb(null,r)}).catch(function(e){cb(e)});
+}
+function removeTagFromGHL(cid, tag, cb) {
+  fetch(GHL_API+'/contacts/'+cid+'/tags', {
+    method:'DELETE', headers:{'Authorization':'Bearer '+GHL_KEY,'Version':'2021-07-28','Content-Type':'application/json'},
+    body:JSON.stringify({tags:[tag]})
+  }).then(function(r){return r.json().then(function(d){return{ok:r.ok,data:d}});}).then(function(r){cb(null,r)}).catch(function(e){cb(e)});
+}
+
+function onOutreachChange(idx, selectEl) {
+  var contact = floridaContacts[idx];
+  var newTag = selectEl.value;
+  var oldTag = contact.outreach;
+  if (newTag === oldTag) return;
+  selectEl.className = 'outreach-select saving';
+  function applyNew() {
+    if (!newTag) {
+      contact.outreach = '';
+      selectEl.className = 'outreach-select';
+      showToast('Tag removed', contact.name, 'success');
+      return;
+    }
+    addTagToGHL(contact.ghlId, newTag, function(err, res) {
+      if (err || !res.ok) {
+        selectEl.className = 'outreach-select error';
+        showToast('Failed', contact.name, 'error');
+        selectEl.value = oldTag;
+        setTimeout(function(){ selectEl.className = oldTag ? 'outreach-select tagged' : 'outreach-select'; }, 2000);
+        return;
+      }
+      contact.outreach = newTag;
+      selectEl.className = 'outreach-select tagged';
+      showToast('Tagged in GHL', contact.name + ' → ' + tagLabel(newTag), 'success');
+    });
+  }
+  if (oldTag) { removeTagFromGHL(contact.ghlId, oldTag, function(){ applyNew(); }); }
+  else { applyNew(); }
+}
+
+// Detail panel
+// Playbook data per segment from sales rep field guide
+var PLAYBOOK = {
+  biohacking_recovery: {
+    priority: 'A — Walk First',
+    profile: 'Entrepreneur, optimizer, health-obsessed, tech-forward — AI excites them',
+    typicalSize: '1–3 locations, $400K–$1.5M revenue per location',
+    corePain: 'Systems can\'t keep up with growth. Members lapsing. Operations consuming time that should go to scaling.',
+    hook: '"You\'re optimizing your clients\' performance — but who\'s optimizing your business?"',
+    valuePoints: [
+      'Their clients expect cutting-edge tech — an AI concierge fits their brand identity perfectly',
+      'Membership lapse is their #1 revenue leak — our reactivation AI addresses this directly',
+      'They\'re already sold on optimization as a concept — frame Opterra as business biohacking',
+      'Multi-modality scheduling (cryo + float + sauna) is a nightmare without smart booking — we solve it',
+      'These owners scale fast and hit ops walls early — Opterra removes the ceiling'
+    ],
+    talkingPoints: [
+      'Lead with the missed-call stat: 62% of calls unanswered, 85% never call back',
+      'Ask: "How many members have you lost in the last 6 months just because nobody followed up?"',
+      'Founders Circle pitch lands hardest here — they love being first movers',
+      'If they use Mindbody, note: their AI is just a Q&A add-on, not proactive revenue ops',
+      'The $10K/90-day guarantee speaks directly to their ROI-driven mindset'
+    ]
+  },
+  med_spa: {
+    priority: 'B — Secondary',
+    profile: 'NP, PA, MD, or entrepreneur — time-starved, running clinical and business ops simultaneously',
+    typicalSize: '1 location, $500K–$3M revenue, owner-operated',
+    corePain: 'Missing calls while in procedures. No bandwidth for strategic growth. Documentation taking evenings.',
+    hook: '"How many calls go to voicemail while you\'re with a patient?"',
+    valuePoints: [
+      'They literally cannot answer the phone during procedures — AI concierge is a no-brainer',
+      'HIPAA compliance is always top of mind — Opterra is HIPAA compliant, say it directly',
+      'High-ticket services ($500–$2K per treatment) mean every missed call = serious lost revenue',
+      'They\'re drowning in SOAP notes and documentation — Practitioner\'s Assistant saves evenings',
+      'Botox/filler patients rebook on cycles — AI Growth Team automates retention at the perfect interval',
+      'They\'re often paying for Jane + Vagaro + a separate marketing tool — we consolidate everything'
+    ],
+    talkingPoints: [
+      'Open with: "How many calls go to voicemail while you\'re with a patient?"',
+      'If they use Jane App: acknowledge AI Scribe is decent for notes, but it\'s standalone — no revenue ops',
+      'If they use Boulevard: strong scheduling, but no proactive reactivation or revenue-share model',
+      'The vision question from the playbook lands especially well here — they got into this to help people, not do admin until 9pm',
+      'Frame consolidation: "Most med spas I talk to are paying $500+/mo across 4-5 tools. Opterra replaces them all."',
+      'Mention the guarantee early if they seem price-sensitive: $10K in 90 days or setup fee refunded'
+    ]
+  },
+  chiro: {
+    priority: 'B — Secondary',
+    profile: 'DC owner-operator — community-focused, relationship-driven, often skeptical of tech',
+    typicalSize: '1 location, solo or small team, $300K–$1M revenue',
+    corePain: 'Missed calls during adjustments, lapsed patients they haven\'t followed up with, admin eating into patient time.',
+    hook: '"How many patients have drifted away just because nobody reached out?"',
+    valuePoints: [
+      'Chiro is high-volume, short-visit — every no-show or cancellation hits the schedule hard',
+      'Patients need recurring care but life gets in the way — AI reactivation keeps them on track',
+      'They\'re usually the front desk AND the practitioner — AI concierge gives them back their hands',
+      'Documentation for insurance billing is a time sink — Practitioner\'s Assistant handles it',
+      'Retention is everything in chiro — our AI Growth Team optimizes rebooking automatically'
+    ],
+    talkingPoints: [
+      'Be warm and peer-level — chiros are relationship people, not tech people',
+      'Ask: "What\'s the longest a good patient has gone without coming back just because you didn\'t have time to follow up?"',
+      'If they push back on AI: "Most AI in this space is robotic. Ours is trained in your specific practice."',
+      'Price objection is common here — use the math: 10 missed calls/mo × $75 avg visit = $750 walking to someone else',
+      'Founders Circle waived setup fee removes the biggest barrier for cost-conscious chiros'
+    ]
+  },
+  holistic_medical: {
+    priority: 'B — Secondary',
+    profile: 'Naturopath, functional medicine, or integrative health practitioner — values-driven, relationship-first',
+    typicalSize: '1 location, solo or 2-3 practitioners, $200K–$1.5M revenue',
+    corePain: 'Long consultations mean phones go unanswered for hours. Patients need nurturing, not just booking. Admin overwhelm.',
+    hook: '"Your patients trust you with their health — but who\'s making sure they can actually reach you?"',
+    valuePoints: [
+      'Their consultations are 45-90 min — the phone is unattended most of the day',
+      'Holistic patients research heavily before committing — the AI handles their questions 24/7',
+      'These patients are high-LTV but need gentle, personalized follow-up — AI Growth Team does this',
+      'Many are still on paper or basic systems — the consolidation value prop is massive',
+      'They often have complex intake forms and protocols — digital automation saves hours per week'
+    ],
+    talkingPoints: [
+      'Lead with genuine curiosity about their practice — these owners are passionate and want to talk about what they do',
+      'Ask: "What does a typical day look like for you right now, from the moment you walk in?"',
+      'Don\'t lead with AI — lead with the outcome: getting their time back to focus on patient care',
+      'If they seem anti-tech: "This isn\'t about replacing the human touch. It\'s about protecting your capacity to deliver it."',
+      'The vision question works beautifully here: "When you first started this, what did you picture?"',
+      'Emphasize: Opterra doesn\'t give them more software to manage — it does the work for them'
+    ]
+  },
+  acupuncture: {
+    priority: 'B — Secondary',
+    profile: 'LAc or TCM practitioner — often solo, deeply connected to their craft, skeptical of corporate tech',
+    typicalSize: 'Solo or small practice, $150K–$600K revenue',
+    corePain: 'Can\'t answer phones during sessions, patient retention is inconsistent, admin takes time from healing work.',
+    hook: '"Your hands are your instrument — they shouldn\'t also be answering phones and chasing follow-ups."',
+    valuePoints: [
+      'Acupuncture sessions require total presence — zero chance of answering calls mid-treatment',
+      'Repeat visits are the core business model — AI-driven rebooking is a perfect fit',
+      'Many acupuncturists are solo — they ARE the front desk, practitioner, and billing dept',
+      'Patient education is huge in TCM — AI can handle FAQs about treatments, prep, and aftercare',
+      'They\'re often the most underserved by existing practice management tools'
+    ],
+    talkingPoints: [
+      'Be respectful of the craft — don\'t treat their practice like "just a business"',
+      'Ask: "How do your patients typically find and book with you right now?"',
+      'Frame Opterra as giving them space to practice: "We handle the business so you can focus on healing"',
+      'If revenue is lower: Concierge-only tier at $997/mo is the right fit — don\'t oversell',
+      'The guarantee is key for cost-conscious practitioners'
+    ]
+  },
+  massage_therapy: {
+    priority: 'B — Secondary',
+    profile: 'LMT owner — hands-on by definition, physically cannot multitask, loyal client base',
+    typicalSize: 'Solo or 2-3 therapists, $100K–$500K revenue',
+    corePain: 'Physically impossible to answer phones during sessions, rebooking relies on memory, evenings spent on admin.',
+    hook: '"You\'re fully booked today — but how many people tried to call and gave up?"',
+    valuePoints: [
+      'They are literally hands-on — the phone goes unanswered for 1-8 hours per day',
+      'Massage clients rebook by habit — one missed touchpoint and they drift to someone else',
+      'Many still use paper scheduling or basic tools like Vagaro — consolidation value is real',
+      'They often have no marketing system at all — even basic AI outreach is a step-change',
+      'Low overhead business means even small revenue recovery ($500-1K/mo) moves the needle'
+    ],
+    talkingPoints: [
+      'Lead with empathy: "I know you can\'t exactly pause a deep tissue session to grab the phone"',
+      'Ask: "What happens when someone calls while you\'re with a client?"',
+      'Be honest about fit — solo LMTs under $200K revenue may not be the right tier',
+      'If they\'re a good fit (multi-therapist, $300K+): Concierge tier is the right entry point',
+      'Vagaro is their most common existing tool — note: Vagaro AI is just a chatbot and content writer, not revenue ops'
+    ]
+  }
+};
+
+function getSegmentKey(tags) {
+  var segs = ['biohacking_recovery','med_spa','chiro','holistic_medical','acupuncture','massage_therapy'];
+  for (var i = 0; i < segs.length; i++) {
+    if (tags.indexOf(segs[i]) !== -1) return segs[i];
+  }
+  return 'holistic_medical'; // default
+}
+
+function openDetail(idx) {
+  var c = floridaContacts[idx];
+  var cf = c.cf || {};
+  var panel = document.getElementById('detailPanel');
+  var segKey = getSegmentKey(c.tags);
+  var pb = PLAYBOOK[segKey] || PLAYBOOK['holistic_medical'];
+
+  var header = '<div class="detail-header"><div><h2>'+c.name+'</h2>'
+    +(c.company ? '<div class="company-name">'+c.company+'</div>' : '')
+    +'</div><button class="close-btn" onclick="closeDetail()">&#10005;</button></div>';
+
+  var info = '<div class="detail-row">'
+    +'<div class="detail-field"><div class="df-label">Phone</div><div class="df-value">'+formatPhone(c.phone)+'</div></div>'
+    +'<div class="detail-field"><div class="df-label">Email</div><div class="df-value">'+(c.email || '<span style="color:var(--text-dim)">Not on file</span>')+'</div></div>'
+    +'<div class="detail-field"><div class="df-label">Location</div><div class="df-value">'+c.city+', Florida</div></div>'
+    +'<div class="detail-field"><div class="df-label">Website</div><div class="df-value">'+(c.website ? '<a href="'+(c.website.startsWith('http')?c.website:'https://'+c.website)+'" target="_blank">'+c.website+'</a>' : '<span style="color:var(--text-dim)">—</span>')+'</div></div>'
+    +'<div class="detail-field"><div class="df-label">Added</div><div class="df-value">'+c.added+'</div></div>'
+    +'<div class="detail-field"><div class="df-label">Source</div><div class="df-value">Optiflow Lead Gen</div></div>'
+    +'</div>';
+
+  var allTags = c.tags.slice();
+  var tagsHtml = '<div class="detail-tags">'+allTags.map(function(t){return '<span class="tag '+tagClass(t)+'">'+tagLabel(t)+'</span>';}).join('')
+    +'<span class="tag" style="background:var(--surface2);color:var(--gold);border:1px solid var(--gold)">Priority '+pb.priority+'</span></div>';
+
+  var kpis = '';
+  if (cf.google_rating || cf.review_count || cf.team_size || cf.years_in_business) {
+    kpis = '<div class="detail-kpi-row">';
+    if (cf.google_rating) kpis += '<div class="detail-kpi"><div class="dk-val">'+cf.google_rating+'</div><div class="dk-label">Google Rating</div></div>';
+    if (cf.review_count) kpis += '<div class="detail-kpi"><div class="dk-val">'+cf.review_count+'</div><div class="dk-label">Reviews</div></div>';
+    if (cf.team_size) kpis += '<div class="detail-kpi"><div class="dk-val">'+cf.team_size+'</div><div class="dk-label">Team Size</div></div>';
+    if (cf.years_in_business) kpis += '<div class="detail-kpi"><div class="dk-val">'+cf.years_in_business+'</div><div class="dk-label">Years in Biz</div></div>';
+    kpis += '</div>';
+  }
+
+  // Playbook: Opening hook
+  var hookSection = '<div class="detail-section" style="border-color:var(--lime)"><h3 style="color:var(--lime)">Opening Hook</h3>'
+    +'<p style="font-size:15px;font-weight:600;color:var(--lime);font-style:italic">'+pb.hook+'</p>'
+    +'<div class="detail-row" style="margin-top:12px">'
+    +'<div class="detail-field"><div class="df-label">Owner Profile</div><div class="df-value">'+pb.profile+'</div></div>'
+    +'<div class="detail-field"><div class="df-label">Typical Size</div><div class="df-value">'+pb.typicalSize+'</div></div>'
+    +'</div>'
+    +'<div class="detail-field" style="margin-top:8px"><div class="df-label">Core Pain</div><div class="df-value">'+pb.corePain+'</div></div>'
+    +'</div>';
+
+  // Playbook: Value points
+  var valueSection = '<div class="detail-section"><h3 style="color:var(--gold)">Value Points — Why Opterra Fits</h3><ul style="list-style:none;padding:0">'
+    + pb.valuePoints.map(function(v){ return '<li style="padding:5px 0 5px 20px;position:relative;font-size:13px"><span style="position:absolute;left:0;top:11px;width:6px;height:6px;border-radius:50%;background:var(--lime)"></span>'+v+'</li>'; }).join('')
+    +'</ul></div>';
+
+  // Playbook: Talking points
+  var talkSection = '<div class="detail-section"><h3 style="color:var(--gold)">Talking Points — What to Say</h3><ul style="list-style:none;padding:0">'
+    + pb.talkingPoints.map(function(v){ return '<li style="padding:5px 0 5px 20px;position:relative;font-size:13px"><span style="position:absolute;left:0;top:11px;width:6px;height:6px;border-radius:50%;background:var(--gold)"></span>'+v+'</li>'; }).join('')
+    +'</ul></div>';
+
+  // Owner / leadership
+  var owner = '';
+  if (cf.owner_title || cf.owner_credentials) {
+    owner = '<div class="detail-section"><h3>Leadership</h3><div class="detail-row">';
+    if (cf.owner_title) owner += '<div class="detail-field"><div class="df-label">Title / Role</div><div class="df-value">'+cf.owner_title+'</div></div>';
+    if (cf.owner_credentials) owner += '<div class="detail-field"><div class="df-label">Credentials</div><div class="df-value">'+cf.owner_credentials+'</div></div>';
+    owner += '</div></div>';
+  }
+
+  var services = '';
+  if (cf.primary_service || cf.all_services || cf.specialties) {
+    services = '<div class="detail-section"><h3>Services & Specialties</h3>';
+    if (cf.primary_service) services += '<p><strong>Primary:</strong> '+cf.primary_service+'</p>';
+    if (cf.specialties) services += '<p><strong>Specialties:</strong> '+cf.specialties+'</p>';
+    if (cf.all_services) services += '<p><strong>All Services:</strong> '+cf.all_services+'</p>';
+    services += '</div>';
+  }
+
+  var mission = '';
+  if (cf.mission_statement || cf.unique_differentiator) {
+    mission = '<div class="detail-section"><h3>About</h3>';
+    if (cf.mission_statement) mission += '<p><strong>Mission:</strong> '+cf.mission_statement+'</p>';
+    if (cf.unique_differentiator) mission += '<p><strong>What sets them apart:</strong> '+cf.unique_differentiator+'</p>';
+    mission += '</div>';
+  }
+
+  var audience = '';
+  if (cf.target_audience || cf.tone_of_brand) {
+    audience = '<div class="detail-section"><h3>Market</h3><div class="detail-row">';
+    if (cf.target_audience) audience += '<div class="detail-field"><div class="df-label">Target Audience</div><div class="df-value">'+cf.target_audience+'</div></div>';
+    if (cf.tone_of_brand) audience += '<div class="detail-field"><div class="df-label">Brand Tone</div><div class="df-value" style="text-transform:capitalize">'+cf.tone_of_brand+'</div></div>';
+    audience += '</div></div>';
+  }
+
+  var pain = '';
+  if (cf.pain_points) {
+    pain = '<div class="detail-section"><h3>Pain Points (Intel from Scrape)</h3><p>'+cf.pain_points+'</p></div>';
+  }
+
+  var hooks = '';
+  if (cf.personalization_hooks) {
+    hooks = '<div class="detail-section"><h3>Personalization Hooks</h3><p>'+cf.personalization_hooks+'</p></div>';
+  }
+
+  var certs = '';
+  if (cf.certifications || cf.new_patient_offer) {
+    certs = '<div class="detail-section"><h3>Certifications & Offers</h3>';
+    if (cf.certifications) certs += '<p><strong>Certifications:</strong> '+cf.certifications+'</p>';
+    if (cf.new_patient_offer) certs += '<p><strong>New Patient Offer:</strong> '+cf.new_patient_offer+'</p>';
+    certs += '</div>';
+  }
+
+  // Guarantee reminder
+  var guarantee = '<div class="detail-section" style="border-color:var(--lime)"><h3 style="color:var(--lime)">The Guarantee</h3>'
+    +'<p style="font-size:13px;font-weight:600">"If we don\'t capture at least $10,000 in revenue you would have otherwise lost in your first 90 days, your setup fee is fully refunded."</p>'
+    +'</div>';
+
+  panel.innerHTML = header + '<div class="detail-body">' + tagsHtml + kpis + info + hookSection + valueSection + talkSection + owner + mission + services + audience + pain + hooks + certs + guarantee + '</div>';
+  document.getElementById('detailOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDetail(); });
+
+function renderTable(data) {
+  var tbody = document.getElementById('flBody');
+  tbody.innerHTML = data.map(function(c, i) {
+    var stageClass = c.stage ? 'stage-select s-'+c.stage : 'stage-select';
+    var stageVal = c.stage || '';
+    return '<tr data-name="'+c.name.toLowerCase()+'" data-company="'+(c.company||'').toLowerCase()+'" data-city="'+c.city.toLowerCase()+'" data-tags="'+c.tags.join(',')+'" data-added="'+c.added+'">'+
+      '<td class="clickable" onclick="openDetail('+i+')"><strong>'+c.name+'</strong></td>'+
+      '<td>'+(c.company||'—')+'</td>'+
+      '<td>'+c.city+'</td>'+
+      '<td>'+formatPhone(c.phone)+'</td>'+
+      '<td>'+(c.email ? '<span class="status-dot dot-has"></span>'+c.email : '<span class="status-dot dot-missing"></span><span style="color:var(--text-dim)">missing</span>')+'</td>'+
+      '<td>'+c.tags.map(function(t){return '<span class="tag '+tagClass(t)+'">'+tagLabel(t)+'</span>';}).join('')+'</td>'+
+      '<td><select class="'+stageClass+'" onchange="onStageChange('+i+',this)">'+
+        '<option value=""'+(stageVal===''?' selected':'')+'>— None —</option>'+
+        '<option value="new-lead"'+(stageVal==='new-lead'?' selected':'')+'>New Lead</option>'+
+        '<option value="cold-called"'+(stageVal==='cold-called'?' selected':'')+'>Cold Called</option>'+
+        '<option value="contacted"'+(stageVal==='contacted'?' selected':'')+'>Contacted</option>'+
+        '<option value="call-booked"'+(stageVal==='call-booked'?' selected':'')+'>Call Booked</option>'+
+        '<option value="proposal-sent"'+(stageVal==='proposal-sent'?' selected':'')+'>Proposal Sent</option>'+
+        '<option value="closed"'+(stageVal==='closed'?' selected':'')+'>Closed</option>'+
+      '</select></td>'+
+      '<td style="color:var(--text-dim)">'+c.added+'</td>'+
+    '</tr>';
+  }).join('');
+  filterTable();
+  document.getElementById('contactCountLabel').textContent = floridaContacts.length;
+}
+
+function filterTable() {
+  var q = document.getElementById('searchInput').value.toLowerCase();
+  var seg = document.getElementById('segmentFilter').value;
+  var city = document.getElementById('cityFilter').value.toLowerCase();
+  document.querySelectorAll('#flBody tr').forEach(function(r) {
+    var mQ = !q || r.dataset.name.indexOf(q)!==-1 || r.dataset.company.indexOf(q)!==-1 || r.dataset.city.indexOf(q)!==-1;
+    var mS = !seg || r.dataset.tags.indexOf(seg)!==-1;
+    var mC = !city || r.dataset.city.indexOf(city)!==-1;
+    r.style.display = (mQ&&mS&&mC) ? '' : 'none';
+  });
+}
+
+var sortCol=-1, sortAsc=true;
+function sortTable(col) {
+  if(sortCol===col){sortAsc=!sortAsc}else{sortCol=col;sortAsc=true}
+  var keys=['name','company','city','phone','email','tags','stage','added'];
+  var key=keys[col];
+  var sorted=floridaContacts.slice().sort(function(a,b){
+    var va=key==='tags'?(a.tags[0]||''):(a[key]||'');
+    var vb=key==='tags'?(b.tags[0]||''):(b[key]||'');
+    if(typeof va==='string')va=va.toLowerCase();
+    if(typeof vb==='string')vb=vb.toLowerCase();
+    return sortAsc?(va<vb?-1:va>vb?1:0):(va>vb?-1:va<vb?1:0);
+  });
+  renderTable(sorted);
+}
+
+function clickCity(cityName) {
+  var chips=document.querySelectorAll('.city-chip');
+  var alreadyActive=false;
+  chips.forEach(function(chip){if(chip.classList.contains('active')){var cn=chip.getAttribute('onclick').match(/'([^']+)'/);if(cn&&cn[1]===cityName)alreadyActive=true;}chip.classList.remove('active');});
+  if(alreadyActive){clearCityFilter();return}
+  chips.forEach(function(chip){var cn=chip.getAttribute('onclick').match(/'([^']+)'/);if(cn&&cn[1]===cityName)chip.classList.add('active');});
+  var sel=document.getElementById('cityFilter');
+  var matched=false;
+  for(var i=0;i<sel.options.length;i++){if(sel.options[i].value.toLowerCase()===cityName.toLowerCase()){sel.value=sel.options[i].value;matched=true;break;}}
+  if(!matched){sel.value='';document.getElementById('searchInput').value=cityName;}
+  var badge=document.getElementById('cityFilterBadge');
+  badge.innerHTML=cityName+' &#10005;';
+  badge.style.display='inline-flex';
+  filterTable();
+  document.getElementById('contactsSection').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function clearCityFilter(){document.getElementById('cityFilter').value='';document.getElementById('searchInput').value='';document.getElementById('cityFilterBadge').style.display='none';document.querySelectorAll('.city-chip').forEach(function(c){c.classList.remove('active')});filterTable();}
+function syncCityChips(){var val=document.getElementById('cityFilter').value;document.querySelectorAll('.city-chip').forEach(function(c){c.classList.remove('active')});if(!val)document.getElementById('cityFilterBadge').style.display='none';}
+
+// Voice memo
+var voiceRecognition = null;
+var voiceIsRecording = false;
+var voiceTranscriptText = '';
+var voiceTimerInterval = null;
+var voiceSeconds = 0;
+var TEAM = {
+  lilly: { id: '3epC5wV55r1nsxRxNlcn', name: 'Lilly Field', patterns: ['lilly','lil','lilly field'] },
+  mikyla: { id: 'cVHlgjmeVBWSQ6snWoz9', name: 'Mikyla Meckelson', patterns: ['mikyla','mykyla','mikayla','mikela','meckelson','mikyla meckelson'] }
+};
+var voiceDetectedTeam = [];
+
+// Populate contact dropdown
+function populateVoiceContacts() {
+  var sel = document.getElementById('voiceContactSelect');
+  floridaContacts.forEach(function(c, i) {
+    var opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = c.name + (c.company ? ' — ' + c.company : '') + ' (' + c.city + ')';
+    sel.appendChild(opt);
+  });
+}
+
+function toggleRecording() {
+  if (voiceIsRecording) { stopRecording(); }
+  else { startRecording(); }
+}
+
+function startRecording() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Not supported', 'Speech recognition requires Chrome', 'error');
+    return;
+  }
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.continuous = true;
+  voiceRecognition.interimResults = true;
+  voiceRecognition.lang = 'en-US';
+
+  voiceTranscriptText = '';
+  var finalText = '';
+
+  voiceRecognition.onresult = function(e) {
+    var interim = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        finalText += e.results[i][0].transcript + ' ';
+      } else {
+        interim += e.results[i][0].transcript;
+      }
+    }
+    voiceTranscriptText = finalText.trim();
+    var box = document.getElementById('voiceTranscript');
+    box.textContent = voiceTranscriptText + (interim ? ' ' + interim : '');
+    box.classList.remove('empty');
+  };
+
+  voiceRecognition.onerror = function(e) {
+    if (e.error !== 'no-speech') {
+      showToast('Mic error', e.error, 'error');
+    }
+  };
+
+  voiceRecognition.onend = function() {
+    if (voiceIsRecording) {
+      // Auto-restart if still recording (Chrome stops after ~60s)
+      try { voiceRecognition.start(); } catch(ex){}
+    }
+  };
+
+  voiceRecognition.start();
+  voiceIsRecording = true;
+  voiceSeconds = 0;
+  document.getElementById('voiceRecordBtn').classList.add('recording');
+  document.getElementById('voiceRecordBtn').innerHTML = '&#9632;';
+  document.getElementById('voiceTimer').textContent = '0:00';
+  document.getElementById('voiceTranscript').textContent = 'Listening...';
+  document.getElementById('voiceTranscript').classList.remove('empty');
+  document.getElementById('voiceRecap').style.display = 'none';
+  document.getElementById('voiceSaveBtn').disabled = true;
+
+  voiceTimerInterval = setInterval(function() {
+    voiceSeconds++;
+    var m = Math.floor(voiceSeconds / 60);
+    var s = voiceSeconds % 60;
+    document.getElementById('voiceTimer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+  }, 1000);
+}
+
+function stopRecording() {
+  voiceIsRecording = false;
+  if (voiceRecognition) { voiceRecognition.stop(); }
+  clearInterval(voiceTimerInterval);
+  document.getElementById('voiceRecordBtn').classList.remove('recording');
+  document.getElementById('voiceRecordBtn').innerHTML = '&#9679;';
+
+  var box = document.getElementById('voiceTranscript');
+  if (voiceTranscriptText.length > 10) {
+    // Make editable
+    box.contentEditable = 'true';
+    box.classList.add('editable');
+    box.addEventListener('input', function() {
+      voiceTranscriptText = box.textContent.trim();
+      generateRecap(voiceTranscriptText);
+      detectTeamMentions(voiceTranscriptText);
+    });
+    generateRecap(voiceTranscriptText);
+    detectTeamMentions(voiceTranscriptText);
+    document.getElementById('voiceSaveBtn').disabled = false;
+  }
+}
+
+function detectTeamMentions(text) {
+  var lower = text.toLowerCase();
+  voiceDetectedTeam = [];
+  Object.keys(TEAM).forEach(function(key) {
+    var member = TEAM[key];
+    var found = member.patterns.some(function(p) { return lower.indexOf(p) !== -1; });
+    if (found) voiceDetectedTeam.push(key);
+  });
+  var badge = document.getElementById('voiceAssignBadge');
+  if (voiceDetectedTeam.length > 0) {
+    badge.style.display = 'flex';
+    badge.innerHTML = '<span style="font-size:11px;color:var(--text-dim)">Auto-assign:</span>' +
+      voiceDetectedTeam.map(function(key) {
+        return '<span class="voice-assign-tag ' + key + '">' + TEAM[key].name + '</span>';
+      }).join('');
+  } else {
+    badge.style.display = 'none';
+    badge.innerHTML = '';
+  }
+}
+
+function generateRecap(text) {
+  // Simple client-side bullet extraction: split on sentences, pick key ones
+  var sentences = text.replace(/([.!?])\s+/g, '$1|').split('|').filter(function(s){ return s.trim().length > 15; });
+  var bullets = [];
+  // Take up to 6 key sentences as recap bullets
+  var maxBullets = Math.min(sentences.length, 6);
+  for (var i = 0; i < maxBullets; i++) {
+    bullets.push(sentences[i].trim());
+  }
+  if (bullets.length === 0) bullets.push(text.substring(0, 200));
+
+  var list = document.getElementById('voiceRecapList');
+  list.innerHTML = bullets.map(function(b){ return '<li>' + b + '</li>'; }).join('');
+  document.getElementById('voiceRecap').style.display = 'block';
+}
+
+function saveVoiceMemo() {
+  var contactIdx = document.getElementById('voiceContactSelect').value;
+  if (contactIdx === '') {
+    showToast('Select a contact', 'Pick who this memo is about', 'error');
+    return;
+  }
+  var c = floridaContacts[parseInt(contactIdx)];
+  var btn = document.getElementById('voiceSaveBtn');
+  btn.textContent = 'Saving...';
+  btn.className = 'voice-save-btn saving';
+  btn.disabled = true;
+
+  // Read edited transcript from contenteditable
+  var editedText = document.getElementById('voiceTranscript').textContent.trim();
+  voiceTranscriptText = editedText;
+
+  // Re-detect mentions from edited text
+  detectTeamMentions(editedText);
+
+  var now = new Date();
+  var dateStr = now.toISOString().slice(0,10);
+  var timeStr = now.toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'});
+  var bullets = [];
+  document.querySelectorAll('#voiceRecapList li').forEach(function(li){ bullets.push(li.textContent); });
+
+  var md = '# Voice Memo — ' + dateStr + ' ' + timeStr + '\n\n';
+  md += '**Contact:** ' + c.name + '\n';
+  if (c.company) md += '**Company:** ' + c.company + '\n';
+  md += '**City:** ' + c.city + ', FL\n';
+  if (voiceDetectedTeam.length > 0) {
+    md += '**Assigned to:** ' + voiceDetectedTeam.map(function(k){ return TEAM[k].name; }).join(', ') + '\n';
+  }
+  md += '\n## Recap\n\n';
+  bullets.forEach(function(b){ md += '- ' + b + '\n'; });
+  md += '\n## Full Transcript\n\n' + editedText + '\n';
+
+  // Post note to GHL
+  fetch(GHL_API + '/contacts/' + c.ghlId + '/notes', {
+    method: 'POST',
+    headers: { 'Authorization':'Bearer '+GHL_KEY, 'Version':'2021-07-28', 'Content-Type':'application/json' },
+    body: JSON.stringify({ body: md })
+  })
+  .then(function(r) { return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res) {
+    if (!res.ok) throw new Error('API error');
+
+    // If team members detected, assign contact to them in GHL
+    var assignPromises = voiceDetectedTeam.map(function(key) {
+      return fetch(GHL_API + '/contacts/' + c.ghlId, {
+        method: 'PUT',
+        headers: { 'Authorization':'Bearer '+GHL_KEY, 'Version':'2021-07-28', 'Content-Type':'application/json' },
+        body: JSON.stringify({ assignedTo: TEAM[key].id })
+      });
+    });
+
+    return Promise.all(assignPromises).then(function() { return res; });
+  })
+  .then(function(res) {
+    btn.textContent = 'Saved!';
+    btn.className = 'voice-save-btn saved';
+    var assignMsg = voiceDetectedTeam.length > 0 ? ' · assigned to ' + voiceDetectedTeam.map(function(k){ return TEAM[k].name; }).join(' & ') : '';
+    showToast('Memo saved to GHL', c.name + ' — ' + bullets.length + ' recap bullets' + assignMsg, 'success');
+    setTimeout(function(){
+      btn.textContent = 'Save to GHL';
+      btn.className = 'voice-save-btn';
+      btn.disabled = true;
+      // Reset for next memo
+      document.getElementById('voiceTranscript').textContent = 'Hit record, talk about the lead, and we\'ll transcribe + summarize it for you.';
+      document.getElementById('voiceTranscript').contentEditable = 'false';
+      document.getElementById('voiceTranscript').classList.remove('editable');
+      document.getElementById('voiceTranscript').classList.add('empty');
+      document.getElementById('voiceRecap').style.display = 'none';
+      document.getElementById('voiceAssignBadge').style.display = 'none';
+      document.getElementById('voiceTimer').textContent = '0:00';
+      voiceDetectedTeam = [];
+    }, 3000);
+  })
+  .catch(function(err) {
+    btn.textContent = 'Save to GHL';
+    btn.className = 'voice-save-btn';
+    btn.disabled = false;
+    showToast('Failed to save', String(err), 'error');
+  });
+}
+
+// Add Contact
+function openAddContact() {
+  var panel = document.getElementById('detailPanel');
+  panel.innerHTML = '<div class="detail-header"><div><h2>Add New Lead</h2><div class="company-name">Create contact in GHL</div></div><button class="close-btn" onclick="closeDetail()">&#10005;</button></div>'+
+  '<div class="detail-body"><div class="add-form" id="addContactForm">'+
+    '<div><label>First Name *</label><input id="ac-first" placeholder="Jane"></div>'+
+    '<div><label>Last Name</label><input id="ac-last" placeholder="Smith"></div>'+
+    '<div><label>Phone *</label><input id="ac-phone" placeholder="(555) 123-4567"></div>'+
+    '<div><label>Email</label><input id="ac-email" type="email" placeholder="jane@example.com"></div>'+
+    '<div><label>Company / Business Name</label><input id="ac-company" placeholder="Sunshine Wellness"></div>'+
+    '<div><label>Website</label><input id="ac-website" placeholder="www.example.com"></div>'+
+    '<div><label>City *</label><input id="ac-city" placeholder="Tampa"></div>'+
+    '<div><label>State</label><input id="ac-state" value="Florida"></div>'+
+    '<div><label>Business Segment</label><select id="ac-segment">'+
+      '<option value="">Select...</option>'+
+      '<option value="med_spa">Med Spa</option>'+
+      '<option value="chiro">Chiropractic</option>'+
+      '<option value="acupuncture">Acupuncture</option>'+
+      '<option value="biohacking_recovery">Biohacking / Recovery</option>'+
+      '<option value="holistic_medical">Holistic Medical</option>'+
+      '<option value="massage_therapy">Massage Therapy</option>'+
+    '</select></div>'+
+    '<div><label>Lead Source</label><select id="ac-source">'+
+      '<option value="Guerrilla Sales">Guerrilla Sales</option>'+
+      '<option value="Cold Call">Cold Call</option>'+
+      '<option value="Referral">Referral</option>'+
+      '<option value="Optiflow Lead Gen">Optiflow Lead Gen</option>'+
+      '<option value="Walk-In">Walk-In</option>'+
+      '<option value="Event">Event</option>'+
+    '</select></div>'+
+    '<div><label>Lead Temperature</label><select id="ac-temp">'+
+      '<option value="">Select...</option>'+
+      '<option value="hot-lead">Hot</option>'+
+      '<option value="warm-lead">Warm</option>'+
+      '<option value="cold-lead">Cold</option>'+
+    '</select></div>'+
+    '<div><label>Owner Title / Role</label><input id="ac-title" placeholder="Dr., Owner, Manager..."></div>'+
+    '<div><label>Primary Service</label><input id="ac-service" placeholder="Botox, Adjustments, IV Therapy..."></div>'+
+    '<div><label>Team Size</label><input id="ac-teamsize" placeholder="5"></div>'+
+    '<div class="full-width"><label>Pain Points / Notes</label><textarea id="ac-notes" placeholder="What are their biggest challenges? What came up in conversation?"></textarea></div>'+
+    '<div class="full-width"><label>Conversation Summary</label><textarea id="ac-summary" placeholder="Quick recap of your interaction..."></textarea></div>'+
+    '<div class="add-form-actions">'+
+      '<button class="add-cancel-btn" onclick="closeDetail()">Cancel</button>'+
+      '<button class="add-submit-btn" id="addSubmitBtn" onclick="submitNewContact()">Create Lead in GHL</button>'+
+    '</div>'+
+  '</div></div>';
+  document.getElementById('detailOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function submitNewContact() {
+  var first = document.getElementById('ac-first').value.trim();
+  var last = document.getElementById('ac-last').value.trim();
+  var phone = document.getElementById('ac-phone').value.trim();
+  var city = document.getElementById('ac-city').value.trim();
+
+  if (!first) { showToast('Missing field', 'First name is required', 'error'); return; }
+  if (!phone) { showToast('Missing field', 'Phone is required', 'error'); return; }
+  if (!city) { showToast('Missing field', 'City is required', 'error'); return; }
+
+  // Format phone
+  var digits = phone.replace(/\D/g, '');
+  if (digits.length === 10) digits = '1' + digits;
+  if (digits.length === 11 && digits[0] === '1') phone = '+' + digits;
+
+  var segment = document.getElementById('ac-segment').value;
+  var temp = document.getElementById('ac-temp').value;
+  var tags = [];
+  if (segment) tags.push(segment);
+  if (temp) tags.push(temp);
+
+  var customFields = [];
+  var title = document.getElementById('ac-title').value.trim();
+  var service = document.getElementById('ac-service').value.trim();
+  var teamsize = document.getElementById('ac-teamsize').value.trim();
+  var notes = document.getElementById('ac-notes').value.trim();
+  var summary = document.getElementById('ac-summary').value.trim();
+  if (segment) customFields.push({id:'wap95mRbxqOLLgN4p90a', field_value: segment});
+  if (title) customFields.push({id:'JYje4syvoHhrwZl7soAR', field_value: title});
+  if (service) customFields.push({id:'w0BJpuVi963KKQo9hoLn', field_value: service});
+  if (teamsize) customFields.push({id:'ysxkj83Q4uoZCf7ovB31', field_value: teamsize});
+  if (notes) customFields.push({id:'gztgSJnfW0y3EVpWi5QN', field_value: notes});
+  if (summary) customFields.push({id:'ezuA8wReqa6mkeiUM5Xa', field_value: summary});
+
+  var body = {
+    locationId: GHL_LOC,
+    firstName: first,
+    lastName: last,
+    phone: phone,
+    email: document.getElementById('ac-email').value.trim(),
+    companyName: document.getElementById('ac-company').value.trim(),
+    website: document.getElementById('ac-website').value.trim(),
+    city: city,
+    state: document.getElementById('ac-state').value.trim(),
+    source: document.getElementById('ac-source').value,
+    tags: tags,
+    customFields: customFields
+  };
+
+  var btn = document.getElementById('addSubmitBtn');
+  btn.textContent = 'Creating...';
+  btn.disabled = true;
+
+  fetch(GHL_API + '/contacts/upsert', {
+    method: 'POST',
+    headers: { 'Authorization':'Bearer '+GHL_KEY, 'Version':'2021-07-28', 'Content-Type':'application/json' },
+    body: JSON.stringify(body)
+  })
+  .then(function(r) { return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res) {
+    if (!res.ok) throw new Error(JSON.stringify(res.data));
+    var newContact = res.data.contact || res.data;
+    // Add to local array
+    floridaContacts.unshift({
+      name: first + (last ? ' ' + last : ''),
+      company: body.companyName,
+      city: city,
+      phone: phone,
+      email: body.email,
+      website: body.website,
+      tags: tags.filter(function(t){ return ['med_spa','chiro','acupuncture','biohacking_recovery','holistic_medical','massage_therapy'].indexOf(t) !== -1; }),
+      added: new Date().toISOString().slice(0,10),
+      ghlId: newContact.id,
+      outreach: '',
+      stage: '',
+      cf: {}
+    });
+    renderTable(floridaContacts);
+    populateVoiceContacts();
+    closeDetail();
+    showToast('Lead created', first + (last ? ' ' + last : '') + ' added to GHL', 'success');
+  })
+  .catch(function(err) {
+    btn.textContent = 'Create Lead in GHL';
+    btn.disabled = false;
+    showToast('Failed to create', String(err), 'error');
+  });
+}
+
+// Live data loading from GHL
+var FIELD_MAP = {
+  'wap95mRbxqOLLgN4p90a':'business_segment','w0BJpuVi963KKQo9hoLn':'primary_service',
+  'fMbniEKDtWpv0iTjHm12':'all_services','gztgSJnfW0y3EVpWi5QN':'pain_points',
+  'ezuA8wReqa6mkeiUM5Xa':'conversation_summary','sZG65ppcV5YiOPIXlxrZ':'reason_for_call',
+  'g5QEnGoZwSSc8kDnxQ4g':'practice_type','yL2bqKcZioWNubyBcadD':'top_priority',
+  'JYje4syvoHhrwZl7soAR':'owner_title','Ym2RPGNnnbsCTMh1cSmx':'owner_credentials',
+  'K5XqlEJdQSgw6qmmAHdh':'years_in_business','ysxkj83Q4uoZCf7ovB31':'team_size',
+  '9ry2up0DA8kGj62rYiGs':'unique_differentiator','SDtrLvQ0MgjJCRxZFitn':'target_audience',
+  'GEm6To648pXoZKGAhjEn':'specialties','NPsCC6osbYvqmHZFA2QM':'certifications',
+  'eAqRmBDxJlWmvv9cdQ6s':'new_patient_offer','YWwvzqTMM8kG8mX0Cbsd':'google_rating',
+  'UNmQis5xQxR1y2ocgkDl':'review_count','y47c7XwyyMQdzZVdWJSN':'tone_of_brand',
+  'esqr5WZGWCpqhDZ3NtV0':'personalization_hooks','h1q94CHz4HvBLeK2ihI8':'website_context',
+  'nlpRTzYDHUQUVhLvZSBS':'mission_statement','26gyPNO2ZV5ywlMzAorx':'founding_story'
+};
+
+var isLoading = false;
+var REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+function parseGHLContact(c) {
+  var cf = {};
+  (c.customFields || []).forEach(function(f) {
+    if (FIELD_MAP[f.id] && f.value) cf[FIELD_MAP[f.id]] = String(f.value).trim();
+  });
+  var tags = (c.tags || []).filter(function(t) {
+    return ['cold-called','guerrilla-marketing','demo-booked','optiflow'].indexOf(t) === -1;
+  });
+  var outreach = '';
+  OUTREACH_TAGS.forEach(function(ot) { if ((c.tags||[]).indexOf(ot) !== -1) outreach = ot; });
+  return {
+    name: ((c.firstNameRaw || c.firstName || '') + ' ' + (c.lastNameRaw || c.lastName || '')).trim() || c.contactName || '',
+    company: c.companyName || '',
+    city: (c.city || '').trim(),
+    state: (c.state || '').trim(),
+    phone: c.phone || '',
+    email: c.email || '',
+    website: c.website || '',
+    tags: tags,
+    added: (c.dateAdded || '').substring(0, 10),
+    ghlId: c.id,
+    outreach: outreach,
+    stage: '',
+    oppId: '',
+    cf: cf
+  };
+}
+
+function isFloridaContact(c) {
+  var s = (c.state || '').toLowerCase().trim();
+  return s === 'florida' || s === 'fl';
+}
+
+async function loadAllContactsFromGHL() {
+  if (isLoading) return;
+  isLoading = true;
+  var statusEl = document.getElementById('contactCountLabel');
+  var origText = statusEl.textContent;
+  statusEl.textContent = 'loading...';
+
+  var allFlorida = [];
+  var url = GHL_API + '/contacts/?locationId=' + GHL_LOC + '&limit=100';
+  var pages = 0;
+  var maxPages = 15; // safety limit
+
+  try {
+    while (url && pages < maxPages) {
+      pages++;
+      var resp = await fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + GHL_KEY, 'Version': '2021-07-28' }
+      });
+      var data = await resp.json();
+      var contacts = data.contacts || [];
+
+      contacts.forEach(function(c) {
+        if (isFloridaContact(c)) {
+          allFlorida.push(parseGHLContact(c));
+        }
+      });
+
+      var meta = data.meta || {};
+      url = meta.nextPageUrl || null;
+    }
+
+    // Deduplicate by ghlId (in case of overlap)
+    var seen = {};
+    floridaContacts = allFlorida.filter(function(c) {
+      if (seen[c.ghlId]) return false;
+      seen[c.ghlId] = true;
+      return true;
+    });
+
+    // Now fetch detailed custom fields for each contact
+    await loadContactDetails();
+
+    renderTable(floridaContacts);
+    populateVoiceContacts();
+    loadPipelineFromGHL();
+    statusEl.textContent = floridaContacts.length;
+    showToast('Contacts synced', floridaContacts.length + ' Florida leads loaded from GHL', 'success');
+  } catch (err) {
+    statusEl.textContent = origText;
+    showToast('Sync failed', String(err), 'error');
+  }
+  isLoading = false;
+}
+
+async function loadContactDetails() {
+  // Fetch full details in batches of 5 to avoid rate limits
+  for (var i = 0; i < floridaContacts.length; i += 5) {
+    var batch = floridaContacts.slice(i, i + 5);
+    await Promise.all(batch.map(function(c) {
+      return fetch(GHL_API + '/contacts/' + c.ghlId, {
+        headers: { 'Authorization': 'Bearer ' + GHL_KEY, 'Version': '2021-07-28' }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var full = data.contact || data;
+        var cf = {};
+        (full.customFields || []).forEach(function(f) {
+          if (FIELD_MAP[f.id] && f.value) cf[FIELD_MAP[f.id]] = String(f.value).trim();
+        });
+        c.cf = cf;
+        if (!c.email && full.email) c.email = full.email;
+        if (!c.website && full.website) c.website = full.website;
+        // Sync outreach tags
+        var outreach = '';
+        OUTREACH_TAGS.forEach(function(ot) { if ((full.tags||[]).indexOf(ot) !== -1) outreach = ot; });
+        c.outreach = outreach;
+      })
+      .catch(function() {});
+    }));
+  }
+}
+
+// Init — load live from GHL
+(async function() {
+  // Render initial empty state
+  renderTable(floridaContacts);
+  // Load live data
+  await loadAllContactsFromGHL();
+  // Set up auto-refresh
+  setInterval(function() { loadAllContactsFromGHL(); }, REFRESH_INTERVAL);
+})();
+</script>
+</body>
+</html>
