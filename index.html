@@ -379,7 +379,7 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
         <thead><tr>
           <th onclick="sortTable(0)">Contact</th><th onclick="sortTable(1)">Company</th><th onclick="sortTable(2)">City</th><th>Phone</th><th>Email</th><th>Segment</th><th>Stage</th><th onclick="sortTable(7)">Added</th>
         </tr></thead>
-        <tbody id="flBody"><tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-dim)">Loading contacts from GHL...</td></tr></tbody>
+        <tbody id="flBody"></tbody>
       </table>
     </div>
   </div>
@@ -1834,24 +1834,11 @@ function restorePhoneStatuses() {
   });
 }
 
-// Init — render embedded data immediately, then try live refresh
+// Init — render embedded data
 restorePhoneStatuses();
 renderTable(floridaContacts);
 updateKpis();
 populateVoiceContacts();
-
-// Try live refresh in background (may fail due to CORS on deployed domains)
-(async function() {
-  try {
-    await loadAllContactsFromGHL();
-  } catch(e) {
-    console.log('Live refresh unavailable (CORS) — using embedded data');
-  }
-  // Retry every 5 min
-  setInterval(function() {
-    try { loadAllContactsFromGHL(); } catch(e) {}
-  }, REFRESH_INTERVAL);
-})();
 </script>
 </body>
 </html>
