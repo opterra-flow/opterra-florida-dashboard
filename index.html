@@ -313,17 +313,21 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
 </div>
 
 <div class="section">
-  <div class="section-title">Quick Notes</div>
+  <div class="section-title">Voice Memo</div>
   <div class="voice-section">
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
-      <select class="voice-contact-select" id="voiceContactSelect">
-        <option value="">Attach to a contact...</option>
-      </select>
+    <select class="voice-contact-select" id="voiceContactSelect" style="margin-bottom:12px">
+      <option value="">Attach to a contact...</option>
+    </select>
+    <div style="display:flex;align-items:center;gap:14px;justify-content:center;margin-bottom:12px">
+      <button class="voice-btn record" id="voiceRecordBtn" onclick="toggleRecording()" style="width:64px;height:64px;font-size:26px">&#9679;</button>
+      <div id="voiceTimer" style="font-size:24px;font-weight:600;color:var(--text-dim);font-variant-numeric:tabular-nums;min-width:50px">0:00</div>
     </div>
-    <div class="voice-transcript-box editable" id="voiceTranscript" contenteditable="true" style="min-height:80px" oninput="document.getElementById('voiceSaveBtn').disabled=false">Type or paste your notes about this lead here...</div>
+    <div id="voiceStatus" style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:12px">Tap the circle to record</div>
+    <audio id="voicePlayback" style="width:100%;display:none;margin-bottom:12px" controls></audio>
+    <div class="voice-transcript-box editable" id="voiceTranscript" contenteditable="true" style="min-height:70px;display:none" oninput="onTranscriptEdit()"></div>
     <div id="voiceAssignBadge" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div class="voice-recap" id="voiceRecap"><h4>Recap</h4><ul id="voiceRecapList"></ul></div>
-    <button class="voice-save-btn" id="voiceSaveBtn" onclick="saveVoiceMemo()" disabled>Save Note to GHL</button>
+    <button class="voice-save-btn" id="voiceSaveBtn" onclick="saveVoiceMemo()" disabled>Save to GHL</button>
   </div>
 </div>
 
@@ -895,11 +899,14 @@ function clickCity(cityName) {
 function clearCityFilter(){document.getElementById('cityFilter').value='';document.getElementById('searchInput').value='';document.getElementById('cityFilterBadge').style.display='none';document.querySelectorAll('.city-chip').forEach(function(c){c.classList.remove('active')});filterTable();}
 function syncCityChips(){var val=document.getElementById('cityFilter').value;document.querySelectorAll('.city-chip').forEach(function(c){c.classList.remove('active')});if(!val)document.getElementById('cityFilterBadge').style.display='none';}
 
-// Voice memo — uses text input instead of broken speech API
+// Voice memo — MediaRecorder API (works on all mobile browsers)
 var voiceIsRecording = false;
 var voiceTimerInterval = null;
 var voiceSeconds = 0;
 var voiceTranscriptText = '';
+var voiceMediaRecorder = null;
+var voiceAudioChunks = [];
+var voiceAudioBlob = null;
 var TEAM = {
   lilly: { id: '3epC5wV55r1nsxRxNlcn', name: 'Lilly Field', patterns: ['lilly','lil','lilly field'] },
   mikyla: { id: 'cVHlgjmeVBWSQ6snWoz9', name: 'Mikyla Meckelson', patterns: ['mikyla','mykyla','mikayla','mikela','meckelson','mikyla meckelson'] }
@@ -908,7 +915,7 @@ var voiceDetectedTeam = [];
 
 function populateVoiceContacts() {
   var sel = document.getElementById('voiceContactSelect');
-  sel.innerHTML = '<option value="">Select a contact...</option>';
+  sel.innerHTML = '<option value="">Attach to a contact...</option>';
   floridaContacts.forEach(function(c, i) {
     var opt = document.createElement('option');
     opt.value = i;
@@ -918,18 +925,67 @@ function populateVoiceContacts() {
 }
 
 function toggleRecording() {
-  // No recording — the text box IS the memo. Just toggle focus.
-  var box = document.getElementById('voiceTranscript');
-  box.classList.remove('empty');
-  box.contentEditable = 'true';
-  box.classList.add('editable');
-  box.focus();
-  box.textContent = box.textContent === 'Type or paste your notes about this lead here...' ? '' : box.textContent;
-  document.getElementById('voiceSaveBtn').disabled = false;
-  showToast('Ready', 'Type your notes below', 'success');
+  if (voiceIsRecording) stopRecording();
+  else startRecording();
 }
 
-function stopRecording() {}
+function startRecording() {
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+    voiceAudioChunks = [];
+    voiceMediaRecorder = new MediaRecorder(stream);
+    voiceMediaRecorder.ondataavailable = function(e) {
+      if (e.data.size > 0) voiceAudioChunks.push(e.data);
+    };
+    voiceMediaRecorder.onstop = function() {
+      stream.getTracks().forEach(function(t) { t.stop(); });
+      voiceAudioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
+      var url = URL.createObjectURL(voiceAudioBlob);
+      var player = document.getElementById('voicePlayback');
+      player.src = url;
+      player.style.display = 'block';
+      // Show transcript area for typed notes
+      var box = document.getElementById('voiceTranscript');
+      box.style.display = 'block';
+      box.textContent = '';
+      box.focus();
+      document.getElementById('voiceStatus').textContent = 'Play it back, then type key notes below';
+      document.getElementById('voiceSaveBtn').disabled = false;
+    };
+    voiceMediaRecorder.start();
+    voiceIsRecording = true;
+    voiceSeconds = 0;
+    document.getElementById('voiceRecordBtn').classList.add('recording');
+    document.getElementById('voiceRecordBtn').innerHTML = '&#9632;';
+    document.getElementById('voiceStatus').textContent = 'Recording...';
+    document.getElementById('voicePlayback').style.display = 'none';
+    document.getElementById('voiceTranscript').style.display = 'none';
+    document.getElementById('voiceRecap').style.display = 'none';
+    document.getElementById('voiceSaveBtn').disabled = true;
+    voiceTimerInterval = setInterval(function() {
+      voiceSeconds++;
+      var m = Math.floor(voiceSeconds / 60), s = voiceSeconds % 60;
+      document.getElementById('voiceTimer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    }, 1000);
+  }).catch(function(err) {
+    showToast('Mic access needed', 'Allow microphone in browser settings', 'error');
+  });
+}
+
+function stopRecording() {
+  voiceIsRecording = false;
+  if (voiceMediaRecorder && voiceMediaRecorder.state !== 'inactive') {
+    voiceMediaRecorder.stop();
+  }
+  clearInterval(voiceTimerInterval);
+  document.getElementById('voiceRecordBtn').classList.remove('recording');
+  document.getElementById('voiceRecordBtn').innerHTML = '&#9679;';
+}
+
+function onTranscriptEdit() {
+  voiceTranscriptText = document.getElementById('voiceTranscript').textContent.trim();
+  detectTeamMentions(voiceTranscriptText);
+  if (voiceTranscriptText.length > 10) generateRecap(voiceTranscriptText);
+}
 
 function detectTeamMentions(text) {
   var lower = text.toLowerCase();
@@ -993,16 +1049,22 @@ function saveVoiceMemo() {
   var bullets = [];
   document.querySelectorAll('#voiceRecapList li').forEach(function(li){ bullets.push(li.textContent); });
 
+  var duration = voiceSeconds > 0 ? Math.floor(voiceSeconds/60) + ':' + (voiceSeconds%60 < 10 ? '0' : '') + voiceSeconds%60 : 'n/a';
   var md = '# Voice Memo — ' + dateStr + ' ' + timeStr + '\n\n';
   md += '**Contact:** ' + c.name + '\n';
   if (c.company) md += '**Company:** ' + c.company + '\n';
   md += '**City:** ' + c.city + ', FL\n';
+  md += '**Recording Duration:** ' + duration + '\n';
   if (voiceDetectedTeam.length > 0) {
     md += '**Assigned to:** ' + voiceDetectedTeam.map(function(k){ return TEAM[k].name; }).join(', ') + '\n';
   }
-  md += '\n## Recap\n\n';
-  bullets.forEach(function(b){ md += '- ' + b + '\n'; });
-  md += '\n## Full Transcript\n\n' + editedText + '\n';
+  if (bullets.length > 0) {
+    md += '\n## Recap\n\n';
+    bullets.forEach(function(b){ md += '- ' + b + '\n'; });
+  }
+  if (editedText) {
+    md += '\n## Notes\n\n' + editedText + '\n';
+  }
 
   // Post note to GHL
   fetch(GHL_API + '/contacts/' + c.ghlId + '/notes', {
