@@ -165,6 +165,23 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
 .add-submit-btn { background:var(--lime); color:var(--forest); }
 .add-submit-btn:hover { opacity:0.85; }
 .add-submit-btn:disabled { opacity:0.4; cursor:not-allowed; }
+/* Call activity log */
+.call-log-section { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; }
+.call-log-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+.cl-stat { text-align:center; padding:10px; background:var(--surface2); border-radius:8px; border:1px solid var(--border); }
+.cl-stat .cl-num { font-size:22px; font-weight:700; }
+.cl-stat .cl-label { font-size:9px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); margin-top:2px; }
+.cl-stat.cl-lead .cl-num { color:var(--lime); }
+.cl-stat.cl-vm .cl-num { color:#7e57c2; }
+.cl-stat.cl-no .cl-num { color:var(--red); }
+.cl-stat.cl-demo .cl-num { color:var(--green); }
+.call-log-feed { max-height:300px; overflow-y:auto; }
+.cl-entry { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.cl-entry:last-child { border-bottom:none; }
+.cl-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.cl-entry .cl-name { flex:1; font-weight:600; }
+.cl-entry .cl-status { font-size:11px; }
+.cl-entry .cl-time { font-size:10px; color:var(--text-dim); }
 /* Cold call tracker — circle style */
 .call-tracker-grid { display:flex; justify-content:center; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
 .call-circle { display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; user-select:none; }
@@ -267,10 +284,12 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
   /* Voice memo */
   .voice-section { padding:16px; }
   .voice-controls { flex-direction:column; align-items:stretch; gap:10px; }
-  .voice-controls > .voice-btn { align-self:center; }
-  .voice-timer { text-align:center; }
-  .voice-contact-select { min-width:100%; }
-  .voice-save-btn { width:100%; text-align:center; }
+  .voice-section { padding:14px; }
+  .voice-controls { flex-direction:column; align-items:stretch; gap:10px; }
+  .voice-controls > .voice-btn { align-self:center; width:56px; height:56px; }
+  .voice-timer { text-align:center; font-size:20px; }
+  .voice-contact-select { min-width:100%; font-size:14px; padding:10px 12px; }
+  .voice-save-btn { width:100%; text-align:center; padding:12px; font-size:14px; }
   .voice-transcript-box { font-size:13px; min-height:60px; }
   /* Table */
   .table-controls { flex-direction:column; }
@@ -385,6 +404,20 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
   </div>
 </div>
 
+<div class="section">
+  <div class="section-title">Sales Rep Call Log</div>
+  <div class="call-log-section">
+    <div class="call-log-summary">
+      <div class="cl-stat cl-lead"><div class="cl-num" id="cl-lead-count">0</div><div class="cl-label">Leads</div></div>
+      <div class="cl-stat cl-vm"><div class="cl-num" id="cl-vm-count">0</div><div class="cl-label">Voicemails</div></div>
+      <div class="cl-stat cl-no"><div class="cl-num" id="cl-no-count">0</div><div class="cl-label">No's</div></div>
+      <div class="cl-stat cl-demo"><div class="cl-num" id="cl-demo-count">0</div><div class="cl-label">Demos</div></div>
+    </div>
+    <div class="call-log-feed" id="callLogFeed">
+      <div style="text-align:center;color:var(--text-dim);padding:20px;font-size:12px">Status changes will appear here as you update phone statuses above</div>
+    </div>
+  </div>
+</div>
 
 <div class="two-col section">
   <div>
@@ -1192,6 +1225,15 @@ function openAddContact() {
     '<div><label>Team Size</label><input id="ac-teamsize" placeholder="5"></div>'+
     '<div class="full-width"><label>Pain Points / Notes</label><textarea id="ac-notes" placeholder="What are their biggest challenges? What came up in conversation?"></textarea></div>'+
     '<div class="full-width"><label>Conversation Summary</label><textarea id="ac-summary" placeholder="Quick recap of your interaction..."></textarea></div>'+
+    '<div class="full-width" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">'+
+      '<label style="font-size:10px;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-dim);display:block;margin-bottom:8px">Voice Note (optional)</label>'+
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+        '<button type="button" class="voice-btn record" id="acVoiceBtn" onclick="toggleAddContactVoice()" style="width:40px;height:40px;font-size:16px">&#9679;</button>'+
+        '<span id="acVoiceTimer" style="font-size:14px;color:var(--text-dim);font-variant-numeric:tabular-nums">0:00</span>'+
+        '<span id="acVoiceStatus" style="font-size:11px;color:var(--text-dim)">Tap to record</span>'+
+      '</div>'+
+      '<div id="acVoiceTranscript" style="display:none;margin-top:8px;font-size:12px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;white-space:pre-wrap" contenteditable="true"></div>'+
+    '</div>'+
     '<div class="add-form-actions">'+
       '<button class="add-cancel-btn" onclick="closeDetail()">Cancel</button>'+
       '<button class="add-submit-btn" id="addSubmitBtn" onclick="submitNewContact()">Create Lead in GHL</button>'+
@@ -1466,7 +1508,63 @@ function setPhoneStatus(idx, sel) {
     }
     var labels = { vm:'Voicemail', no:'Not Interested', demo:'Demo Booked', lead:'Lead' };
     showToast(labels[val], c.name, val==='demo' ? 'success' : '');
+
+    // Add to call log feed
+    addToCallLog(c, val);
   }
+  updateCallLogCounts();
+}
+
+// Call log
+var CALL_LOG_FEED_KEY = 'opterra_call_feed';
+var callFeed = [];
+try { callFeed = JSON.parse(localStorage.getItem(CALL_LOG_FEED_KEY) || '[]'); } catch(e){}
+
+function addToCallLog(contact, status) {
+  var labels = { vm:'Voicemail', no:'Not Interested', demo:'Demo Booked', lead:'Lead' };
+  callFeed.unshift({
+    name: contact.name,
+    company: contact.company || '',
+    status: status,
+    label: labels[status] || status,
+    time: new Date().toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'}),
+    date: new Date().toISOString().slice(0,10)
+  });
+  if (callFeed.length > 100) callFeed = callFeed.slice(0, 100);
+  localStorage.setItem(CALL_LOG_FEED_KEY, JSON.stringify(callFeed));
+  renderCallLogFeed();
+}
+
+function updateCallLogCounts() {
+  var counts = { lead:0, vm:0, no:0, demo:0 };
+  floridaContacts.forEach(function(c) {
+    if (c.phoneStatus && counts[c.phoneStatus] !== undefined) counts[c.phoneStatus]++;
+  });
+  var el;
+  el = document.getElementById('cl-lead-count'); if(el) el.textContent = counts.lead;
+  el = document.getElementById('cl-vm-count'); if(el) el.textContent = counts.vm;
+  el = document.getElementById('cl-no-count'); if(el) el.textContent = counts.no;
+  el = document.getElementById('cl-demo-count'); if(el) el.textContent = counts.demo;
+}
+
+function renderCallLogFeed() {
+  var feed = document.getElementById('callLogFeed');
+  if (!feed) return;
+  var dotColors = { lead:'var(--lime)', vm:'#7e57c2', no:'var(--red)', demo:'var(--green)' };
+  var today = new Date().toISOString().slice(0,10);
+  var todayEntries = callFeed.filter(function(e){ return e.date === today; });
+  if (todayEntries.length === 0) {
+    feed.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px;font-size:12px">No activity today yet</div>';
+    return;
+  }
+  feed.innerHTML = todayEntries.map(function(e) {
+    return '<div class="cl-entry">'
+      +'<span class="cl-dot" style="background:'+( dotColors[e.status]||'var(--text-dim)')+'"></span>'
+      +'<span class="cl-name">'+e.name+(e.company?' — '+e.company:'')+'</span>'
+      +'<span class="cl-status" style="color:'+(dotColors[e.status]||'var(--text-dim)')+'">'+e.label+'</span>'
+      +'<span class="cl-time">'+e.time+'</span>'
+      +'</div>';
+  }).join('');
 }
 
 // Restore phone statuses after contacts load
@@ -1476,10 +1574,73 @@ function restorePhoneStatuses() {
   });
 }
 
+// Add-contact voice recorder
+var acVoiceRecognition = null;
+var acVoiceRecording = false;
+var acVoiceText = '';
+var acVoiceTimer = null;
+var acVoiceSec = 0;
+
+function toggleAddContactVoice() {
+  if (acVoiceRecording) { stopAddContactVoice(); }
+  else { startAddContactVoice(); }
+}
+function startAddContactVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Not supported', 'Speech recognition requires Chrome', 'error'); return;
+  }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  acVoiceRecognition = new SR();
+  acVoiceRecognition.continuous = true;
+  acVoiceRecognition.interimResults = true;
+  acVoiceRecognition.lang = 'en-US';
+  var finalText = '';
+  acVoiceRecognition.onresult = function(e) {
+    var interim = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    acVoiceText = finalText.trim();
+    var el = document.getElementById('acVoiceTranscript');
+    if (el) { el.style.display = 'block'; el.textContent = acVoiceText + (interim ? ' ' + interim : ''); }
+  };
+  acVoiceRecognition.onend = function() { if (acVoiceRecording) try { acVoiceRecognition.start(); } catch(ex){} };
+  acVoiceRecognition.start();
+  acVoiceRecording = true;
+  acVoiceSec = 0;
+  var btn = document.getElementById('acVoiceBtn');
+  if (btn) { btn.classList.add('recording'); btn.innerHTML = '&#9632;'; }
+  var st = document.getElementById('acVoiceStatus');
+  if (st) st.textContent = 'Recording...';
+  acVoiceTimer = setInterval(function() {
+    acVoiceSec++;
+    var m = Math.floor(acVoiceSec/60), s = acVoiceSec%60;
+    var el = document.getElementById('acVoiceTimer');
+    if (el) el.textContent = m+':'+(s<10?'0':'')+s;
+  }, 1000);
+}
+function stopAddContactVoice() {
+  acVoiceRecording = false;
+  if (acVoiceRecognition) acVoiceRecognition.stop();
+  clearInterval(acVoiceTimer);
+  var btn = document.getElementById('acVoiceBtn');
+  if (btn) { btn.classList.remove('recording'); btn.innerHTML = '&#9679;'; }
+  var st = document.getElementById('acVoiceStatus');
+  if (st) st.textContent = 'Done — edit below if needed';
+  var el = document.getElementById('acVoiceTranscript');
+  if (el) { el.style.display = 'block'; el.contentEditable = 'true'; }
+  // Auto-fill the summary field
+  var summary = document.getElementById('ac-summary');
+  if (summary && acVoiceText && !summary.value) summary.value = acVoiceText;
+}
+
 // Init — render embedded data
 restorePhoneStatuses();
 renderTable(floridaContacts);
 populateVoiceContacts();
+updateCallLogCounts();
+renderCallLogFeed();
 </script>
 </body>
 </html>
