@@ -178,6 +178,8 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
 .call-stat.demos .cs-val { color:var(--green); }
 .call-stat.nos .cs-val { color:var(--red); }
 .call-stat .cs-plus { font-size:11px; color:var(--text-dim); margin-top:4px; }
+.call-stat .cs-undo { font-size:10px; color:var(--red); margin-top:4px; opacity:0.6; cursor:pointer; }
+.call-stat .cs-undo:hover { opacity:1; text-decoration:underline; }
 /* Leaderboard */
 .leaderboard { margin-top:16px; }
 .leaderboard h4 { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--gold); margin-bottom:10px; }
@@ -383,10 +385,10 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
         </select>
       </div>
       <div class="call-tracker-grid">
-        <div class="call-stat calls" onclick="event.stopPropagation();logCall('call')"><div class="cs-val" id="stat-calls">0</div><div class="cs-label">Calls</div><div class="cs-plus">tap +1</div></div>
-        <div class="call-stat pickups" onclick="event.stopPropagation();logCall('pickup')"><div class="cs-val" id="stat-pickups">0</div><div class="cs-label">Pick Ups</div><div class="cs-plus">tap +1</div></div>
-        <div class="call-stat demos" onclick="event.stopPropagation();logCall('demo')"><div class="cs-val" id="stat-demos">0</div><div class="cs-label">Demos</div><div class="cs-plus">tap +1</div></div>
-        <div class="call-stat nos" onclick="event.stopPropagation();logCall('no')"><div class="cs-val" id="stat-nos">0</div><div class="cs-label">No's</div><div class="cs-plus">tap +1</div></div>
+        <div class="call-stat calls" onclick="event.stopPropagation();logCall('call')"><div class="cs-val" id="stat-calls">0</div><div class="cs-label">Calls</div><div class="cs-plus">tap +1</div><div class="cs-undo" onclick="event.stopPropagation();undoCall('call')">undo</div></div>
+        <div class="call-stat pickups" onclick="event.stopPropagation();logCall('pickup')"><div class="cs-val" id="stat-pickups">0</div><div class="cs-label">Pick Ups</div><div class="cs-plus">tap +1</div><div class="cs-undo" onclick="event.stopPropagation();undoCall('pickup')">undo</div></div>
+        <div class="call-stat demos" onclick="event.stopPropagation();logCall('demo')"><div class="cs-val" id="stat-demos">0</div><div class="cs-label">Demos</div><div class="cs-plus">tap +1</div><div class="cs-undo" onclick="event.stopPropagation();undoCall('demo')">undo</div></div>
+        <div class="call-stat nos" onclick="event.stopPropagation();logCall('no')"><div class="cs-val" id="stat-nos">0</div><div class="cs-label">No's</div><div class="cs-plus">tap +1</div><div class="cs-undo" onclick="event.stopPropagation();undoCall('no')">undo</div></div>
       </div>
       <div class="streak-bar"><span class="streak-fire">&#128293;</span><span class="streak-text">Pickup streak:</span><span class="streak-count" id="stat-streak">0</span></div>
       <div class="session-timer"><span>Session:</span><span class="timer-val" id="sessionTimer">0:00</span><span style="margin-left:auto;font-size:11px">Conversion: <strong id="stat-conversion" style="color:var(--green)">0%</strong></span></div>
@@ -1530,6 +1532,36 @@ function logCall(type) {
 
   saveCallStats();
   renderCallStats();
+}
+
+function undoCall(type) {
+  var rep = getActiveRepStats();
+  // Don't go below zero
+  if (type === 'call') { if (rep.calls > 0) rep.calls--; }
+  else if (type === 'pickup') { if (rep.pickups > 0) rep.pickups--; if (rep.calls > 0) rep.calls--; }
+  else if (type === 'demo') { if (rep.demos > 0) rep.demos--; if (rep.pickups > 0) rep.pickups--; if (rep.calls > 0) rep.calls--; }
+  else if (type === 'no') { if (rep.nos > 0) rep.nos--; if (rep.calls > 0) rep.calls--; }
+
+  // Undo from last selected contact if one was selected
+  var selIdx = document.getElementById('callContactSelect').value;
+  if (selIdx !== '') {
+    var c = floridaContacts[parseInt(selIdx)];
+    var cl = callLog[c.ghlId];
+    if (cl) {
+      if (cl.calls > 0) cl.calls--;
+      if (type === 'pickup' && cl.pickups > 0) cl.pickups--;
+      if (type === 'demo' && cl.demos > 0) cl.demos--;
+      if (type === 'no' && cl.nos > 0) cl.nos--;
+      if (cl.calls === 0) cl.lastResult = '';
+      saveCallLog();
+      renderTable(floridaContacts);
+      populateCallContactSelect();
+    }
+  }
+
+  saveCallStats();
+  renderCallStats();
+  showToast('Undone', type + ' -1', '');
 }
 
 function renderCallStats() {
