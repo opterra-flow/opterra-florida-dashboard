@@ -324,7 +324,11 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
     </div>
     <div id="voiceStatus" style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:12px">Tap the circle to record</div>
     <audio id="voicePlayback" style="width:100%;display:none;margin-bottom:12px" controls></audio>
-    <div class="voice-transcript-box editable" id="voiceTranscript" contenteditable="true" style="min-height:70px;display:none" oninput="onTranscriptEdit()"></div>
+    <div id="voiceNotesWrap" style="display:none;margin-bottom:12px">
+      <label style="font-size:10px;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-dim);display:block;margin-bottom:4px">Notes from this conversation</label>
+      <textarea id="voiceNotes" style="width:100%;min-height:80px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:14px;font-family:'Montserrat',sans-serif;resize:vertical;outline:none" placeholder="Type key takeaways, pain points, next steps..." oninput="onNotesEdit()"></textarea>
+    </div>
+    <div id="voiceTranscript" style="display:none"></div>
     <div id="voiceAssignBadge" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div class="voice-recap" id="voiceRecap"><h4>Recap</h4><ul id="voiceRecapList"></ul></div>
     <button class="voice-save-btn" id="voiceSaveBtn" onclick="saveVoiceMemo()" disabled>Save to GHL</button>
@@ -932,22 +936,29 @@ function toggleRecording() {
 function startRecording() {
   navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
     voiceAudioChunks = [];
-    voiceMediaRecorder = new MediaRecorder(stream);
+    // Pick a supported audio format
+    var mimeOpts = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'];
+    var recOpts = {};
+    for (var mi = 0; mi < mimeOpts.length; mi++) {
+      if (MediaRecorder.isTypeSupported(mimeOpts[mi])) { recOpts.mimeType = mimeOpts[mi]; break; }
+    }
+    voiceMediaRecorder = new MediaRecorder(stream, recOpts);
     voiceMediaRecorder.ondataavailable = function(e) {
       if (e.data.size > 0) voiceAudioChunks.push(e.data);
     };
     voiceMediaRecorder.onstop = function() {
       stream.getTracks().forEach(function(t) { t.stop(); });
-      voiceAudioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
+      // Use the recorder's actual mimeType for the blob
+      var mimeType = voiceMediaRecorder.mimeType || 'audio/webm';
+      voiceAudioBlob = new Blob(voiceAudioChunks, { type: mimeType });
       var url = URL.createObjectURL(voiceAudioBlob);
       var player = document.getElementById('voicePlayback');
       player.src = url;
       player.style.display = 'block';
-      // Show transcript area for typed notes
-      var box = document.getElementById('voiceTranscript');
-      box.style.display = 'block';
-      box.textContent = '';
-      box.focus();
+      // Show notes area
+      document.getElementById('voiceNotesWrap').style.display = 'block';
+      document.getElementById('voiceNotes').value = '';
+      document.getElementById('voiceNotes').focus();
       document.getElementById('voiceStatus').textContent = 'Play it back, then type key notes below';
       document.getElementById('voiceSaveBtn').disabled = false;
     };
@@ -981,8 +992,8 @@ function stopRecording() {
   document.getElementById('voiceRecordBtn').innerHTML = '&#9679;';
 }
 
-function onTranscriptEdit() {
-  voiceTranscriptText = document.getElementById('voiceTranscript').textContent.trim();
+function onNotesEdit() {
+  voiceTranscriptText = document.getElementById('voiceNotes').value.trim();
   detectTeamMentions(voiceTranscriptText);
   if (voiceTranscriptText.length > 10) generateRecap(voiceTranscriptText);
 }
@@ -1036,8 +1047,7 @@ function saveVoiceMemo() {
   btn.className = 'voice-save-btn saving';
   btn.disabled = true;
 
-  // Read edited transcript from contenteditable
-  var editedText = document.getElementById('voiceTranscript').textContent.trim();
+  var editedText = (document.getElementById('voiceNotes') ? document.getElementById('voiceNotes').value : '').trim();
   voiceTranscriptText = editedText;
 
   // Re-detect mentions from edited text
@@ -1097,14 +1107,14 @@ function saveVoiceMemo() {
       btn.className = 'voice-save-btn';
       btn.disabled = true;
       // Reset for next memo
-      document.getElementById('voiceTranscript').textContent = 'Hit record, talk about the lead, and we\'ll transcribe + summarize it for you.';
-      document.getElementById('voiceTranscript').contentEditable = 'false';
-      document.getElementById('voiceTranscript').classList.remove('editable');
-      document.getElementById('voiceTranscript').classList.add('empty');
+      document.getElementById('voicePlayback').style.display = 'none';
+      document.getElementById('voiceNotesWrap').style.display = 'none';
       document.getElementById('voiceRecap').style.display = 'none';
       document.getElementById('voiceAssignBadge').style.display = 'none';
       document.getElementById('voiceTimer').textContent = '0:00';
+      document.getElementById('voiceStatus').textContent = 'Tap the circle to record';
       voiceDetectedTeam = [];
+      voiceSeconds = 0;
     }, 3000);
   })
   .catch(function(err) {
