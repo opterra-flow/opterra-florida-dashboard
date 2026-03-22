@@ -210,10 +210,18 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
 .phone-dot.dot-lead { background:var(--lime); }
 .phone-select { background:var(--surface2); border:1px solid var(--border); color:var(--text-dim); padding:4px 6px; border-radius:5px; font-size:11px; outline:none; cursor:pointer; font-family:'Montserrat',sans-serif; width:100%; margin-top:3px; }
 .phone-select:focus { border-color:var(--lime); }
-.phone-select.ps-vm { border-color:#7e57c2; color:#7e57c2; }
-.phone-select.ps-no { border-color:var(--red); color:var(--red); }
-.phone-select.ps-demo { border-color:var(--green); color:var(--green); }
 .phone-select.ps-lead { border-color:var(--lime); color:var(--lime); }
+.phone-select.ps-cold-called { border-color:#7ec8e3; color:#7ec8e3; }
+.phone-select.ps-vm { border-color:#7e57c2; color:#7e57c2; }
+.phone-select.ps-contacted { border-color:var(--gold); color:var(--gold); }
+.phone-select.ps-no { border-color:var(--red); color:var(--red); }
+.phone-select.ps-call-booked { border-color:#e0a84e; color:#e0a84e; }
+.phone-select.ps-demo { border-color:var(--green); color:var(--green); }
+.phone-select.ps-closed { border-color:var(--lime); color:var(--lime); }
+.phone-dot.dot-cold-called { background:#7ec8e3; }
+.phone-dot.dot-contacted { background:var(--gold); }
+.phone-dot.dot-call-booked { background:#e0a84e; }
+.phone-dot.dot-closed { background:var(--lime); }
 /* Leaderboard */
 .leaderboard { margin-top:16px; }
 .leaderboard h4 { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--gold); margin-bottom:10px; }
@@ -346,10 +354,11 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
       <select id="segmentFilter" onchange="filterTable()"><option value="">All Segments</option><option value="holistic_medical">Holistic Medical</option><option value="med_spa">Med Spa</option><option value="chiro">Chiropractic</option><option value="biohacking_recovery">Biohacking / Recovery</option><option value="acupuncture">Acupuncture</option><option value="massage_therapy">Massage Therapy</option></select>
       <select id="cityFilter" onchange="filterTable();syncCityChips();"><option value="">All Cities</option><option value="Tampa">Tampa</option><option value="Orlando">Orlando</option><option value="Boca Raton">Boca Raton</option><option value="Maitland">Maitland</option><option value="Jacksonville">Jacksonville</option><option value="Miami">Miami</option><option value="Palm Beach Gardens">Palm Beach</option><option value="Oviedo">Oviedo</option></select>
     </div>
-    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-      <table id="flTable">
+    <div style="overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:60vh">
+      <table id="flTable" style="position:relative">
+        <colgroup><col><col><col><col><col><col><col></colgroup>
         <thead><tr>
-          <th onclick="sortTable(0)">Contact</th><th onclick="sortTable(1)">Company</th><th onclick="sortTable(2)">City</th><th>Phone</th><th>Email</th><th>Segment</th><th>Stage</th><th onclick="sortTable(7)">Added</th>
+          <th onclick="sortTable(0)">Contact</th><th onclick="sortTable(1)">Company</th><th onclick="sortTable(2)">City</th><th>Phone / Status</th><th>Email</th><th>Segment</th><th onclick="sortTable(6)">Added</th>
         </tr></thead>
         <tbody id="flBody"></tbody>
       </table>
@@ -825,31 +834,27 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close
 function renderTable(data) {
   var tbody = document.getElementById('flBody');
   tbody.innerHTML = data.map(function(c, i) {
-    var stageClass = c.stage ? 'stage-select s-'+c.stage : 'stage-select';
-    var stageVal = c.stage || '';
+    var status = c.phoneStatus || '';
+    var dotClass = 'dot-'+(status||'none');
+    var selClass = 'phone-select'+(status ? ' ps-'+status : '');
     return '<tr data-name="'+c.name.toLowerCase()+'" data-company="'+(c.company||'').toLowerCase()+'" data-city="'+c.city.toLowerCase()+'" data-tags="'+c.tags.join(',')+'" data-added="'+c.added+'">'+
       '<td class="clickable" onclick="openDetail('+i+')"><strong>'+c.name+'</strong></td>'+
       '<td>'+(c.company||'—')+'</td>'+
       '<td>'+c.city+'</td>'+
-      '<td><div class="phone-status"><span class="phone-dot dot-'+(c.phoneStatus||'none')+'"></span>'+formatPhone(c.phone)+'</div>'+
-      '<select class="phone-select'+(c.phoneStatus?' ps-'+c.phoneStatus:'')+'" onchange="setPhoneStatus('+i+',this)">'+
-        '<option value=""'+((!c.phoneStatus)?' selected':'')+'>Status...</option>'+
-        '<option value="lead"'+((c.phoneStatus==='lead')?' selected':'')+'>Lead</option>'+
-        '<option value="vm"'+((c.phoneStatus==='vm')?' selected':'')+'>Voicemail</option>'+
-        '<option value="no"'+((c.phoneStatus==='no')?' selected':'')+'>No</option>'+
-        '<option value="demo"'+((c.phoneStatus==='demo')?' selected':'')+'>Demo Booked</option>'+
+      '<td><div class="phone-status"><span class="phone-dot '+dotClass+'"></span>'+formatPhone(c.phone)+'</div>'+
+      '<select class="'+selClass+'" onchange="setPhoneStatus('+i+',this)">'+
+        '<option value=""'+(!status?' selected':'')+'>Status...</option>'+
+        '<option value="lead"'+(status==='lead'?' selected':'')+'>New Lead</option>'+
+        '<option value="cold-called"'+(status==='cold-called'?' selected':'')+'>Cold Called</option>'+
+        '<option value="vm"'+(status==='vm'?' selected':'')+'>Voicemail</option>'+
+        '<option value="contacted"'+(status==='contacted'?' selected':'')+'>Contacted</option>'+
+        '<option value="no"'+(status==='no'?' selected':'')+'>Said No</option>'+
+        '<option value="call-booked"'+(status==='call-booked'?' selected':'')+'>Call Booked</option>'+
+        '<option value="demo"'+(status==='demo'?' selected':'')+'>Demo Booked</option>'+
+        '<option value="closed"'+(status==='closed'?' selected':'')+'>Closed</option>'+
       '</select></td>'+
       '<td>'+(c.email ? '<span class="status-dot dot-has"></span>'+c.email : '<span class="status-dot dot-missing"></span><span style="color:var(--text-dim)">—</span>')+'</td>'+
       '<td>'+c.tags.map(function(t){return '<span class="tag '+tagClass(t)+'">'+tagLabel(t)+'</span>';}).join('')+'</td>'+
-      '<td><select class="'+stageClass+'" onchange="onStageChange('+i+',this)">'+
-        '<option value=""'+(stageVal===''?' selected':'')+'>— None —</option>'+
-        '<option value="new-lead"'+(stageVal==='new-lead'?' selected':'')+'>New Lead</option>'+
-        '<option value="cold-called"'+(stageVal==='cold-called'?' selected':'')+'>Cold Called</option>'+
-        '<option value="contacted"'+(stageVal==='contacted'?' selected':'')+'>Contacted</option>'+
-        '<option value="call-booked"'+(stageVal==='call-booked'?' selected':'')+'>Call Booked</option>'+
-        '<option value="proposal-sent"'+(stageVal==='proposal-sent'?' selected':'')+'>Proposal Sent</option>'+
-        '<option value="closed"'+(stageVal==='closed'?' selected':'')+'>Closed</option>'+
-      '</select></td>'+
       '<td style="color:var(--text-dim)">'+c.added+'</td>'+
     '</tr>';
   }).join('');
@@ -872,7 +877,7 @@ function filterTable() {
 var sortCol=-1, sortAsc=true;
 function sortTable(col) {
   if(sortCol===col){sortAsc=!sortAsc}else{sortCol=col;sortAsc=true}
-  var keys=['name','company','city','phone','email','tags','stage','added'];
+  var keys=['name','company','city','phone','email','tags','added'];
   var key=keys[col];
   var sorted=floridaContacts.slice().sort(function(a,b){
     var va=key==='tags'?(a.tags[0]||''):(a[key]||'');
@@ -1429,7 +1434,7 @@ function setPhoneStatus(idx, sel) {
 
   // Add tag to GHL
   if (val) {
-    var tagMap = { vm:'voicemail', no:'not-interested', demo:'demo-booked', lead:'hot-lead' };
+    var tagMap = { lead:'hot-lead', 'cold-called':'cold-called', vm:'voicemail', contacted:'contacted', no:'not-interested', 'call-booked':'call-booked', demo:'demo-booked', closed:'closed-won' };
     var tag = tagMap[val];
     if (tag) {
       fetch(GHL_API + '/contacts/' + c.ghlId + '/tags', {
@@ -1438,7 +1443,7 @@ function setPhoneStatus(idx, sel) {
         body: JSON.stringify({ tags: [tag] })
       }).catch(function(){});
     }
-    var labels = { vm:'Voicemail', no:'Not Interested', demo:'Demo Booked', lead:'Lead' };
+    var labels = { lead:'New Lead', 'cold-called':'Cold Called', vm:'Voicemail', contacted:'Contacted', no:'Said No', 'call-booked':'Call Booked', demo:'Demo Booked', closed:'Closed' };
     showToast(labels[val], c.name, val==='demo' ? 'success' : '');
 
     // Add to call log feed
@@ -1468,21 +1473,25 @@ function addToCallLog(contact, status) {
 }
 
 function updateCallLogCounts() {
-  var counts = { lead:0, vm:0, no:0, demo:0 };
+  var counts = { lead:0, vm:0, no:0, demo:0, 'cold-called':0, contacted:0, 'call-booked':0, closed:0 };
   floridaContacts.forEach(function(c) {
-    if (c.phoneStatus && counts[c.phoneStatus] !== undefined) counts[c.phoneStatus]++;
+    if (c.phoneStatus) {
+      if (counts[c.phoneStatus] !== undefined) counts[c.phoneStatus]++;
+      // Map to summary buckets
+      if (c.phoneStatus === 'lead' || c.phoneStatus === 'cold-called') counts.lead = (counts.lead||0);
+    }
   });
   var el;
-  el = document.getElementById('cl-lead-count'); if(el) el.textContent = counts.lead;
+  el = document.getElementById('cl-lead-count'); if(el) el.textContent = counts.lead + counts['cold-called'];
   el = document.getElementById('cl-vm-count'); if(el) el.textContent = counts.vm;
   el = document.getElementById('cl-no-count'); if(el) el.textContent = counts.no;
-  el = document.getElementById('cl-demo-count'); if(el) el.textContent = counts.demo;
+  el = document.getElementById('cl-demo-count'); if(el) el.textContent = counts.demo + counts['call-booked'] + counts.closed;
 }
 
 function renderCallLogFeed() {
   var feed = document.getElementById('callLogFeed');
   if (!feed) return;
-  var dotColors = { lead:'var(--lime)', vm:'#7e57c2', no:'var(--red)', demo:'var(--green)' };
+  var dotColors = { lead:'var(--lime)', 'cold-called':'#7ec8e3', vm:'#7e57c2', contacted:'var(--gold)', no:'var(--red)', 'call-booked':'#e0a84e', demo:'var(--green)', closed:'var(--lime)' };
   var today = new Date().toISOString().slice(0,10);
   var todayEntries = callFeed.filter(function(e){ return e.date === today; });
   if (todayEntries.length === 0) {
