@@ -82,9 +82,16 @@ old_data = re.search(r"var floridaContacts = \[.*?\];", html, re.DOTALL)
 if old_data:
     new_js = "var floridaContacts = " + json.dumps(result, ensure_ascii=False) + ";"
     html = html[:old_data.start()] + new_js + html[old_data.end():]
+
+    # Inject env vars (replace placeholders with actual values)
+    html = html.replace("%%GHL_API_KEY%%", KEY)
+    html = html.replace("%%GHL_LOCATION_ID%%", LOC)
+    html = html.replace("%%GHL_PIPELINE_ID%%", os.environ.get("GHL_PIPELINE_ID", "BjOb6oh133vA1zjVZMjJ"))
+
     with open("index.html", "w") as f:
         f.write(html)
     print(f"\nEmbedded {len(result)} contacts into index.html")
+    print("Injected env vars into HTML")
 else:
     print("ERROR: Could not find floridaContacts in HTML")
     exit(1)

@@ -15,6 +15,8 @@ jobs:
       - name: Fetch Florida contacts from GHL
         env:
           GHL_KEY: ${{ secrets.GHL_API_KEY }}
+          GHL_LOCATION_ID: ${{ secrets.GHL_LOCATION_ID }}
+          GHL_PIPELINE_ID: ${{ secrets.GHL_PIPELINE_ID }}
         run: python3 sync.py
       - name: Commit and push if changed
         run: |
