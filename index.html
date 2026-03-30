@@ -1891,13 +1891,13 @@ function populateRouteCheckboxes() {
   container.innerHTML = contactsWithCity.map(function(c, i) {
     var checked = selectedRouteContacts.indexOf(c.ghlId) !== -1;
     var order = checked ? selectedRouteContacts.indexOf(c.ghlId) + 1 : '';
-    return '<label class="route-item'+(checked?' selected':'')+'" data-ghlid="'+c.ghlId+'" onclick="toggleRouteContact(this,\''+c.ghlId+'\')">'+
-      '<input type="checkbox" '+(checked?'checked':'')+' onclick="event.stopPropagation()">'+
+    return '<div class="route-item'+(checked?' selected':'')+'" data-ghlid="'+c.ghlId+'" onclick="toggleRouteContact(this,\''+c.ghlId+'\')">'+
+      '<div style="width:22px;height:22px;border-radius:4px;border:2px solid '+(checked?'var(--lime)':'var(--border)')+';background:'+(checked?'var(--lime)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:var(--forest)">'+(checked?'&#10003;':'')+'</div>'+
       '<span class="ri-num">'+order+'</span>'+
       '<div style="flex:1;min-width:0"><div class="ri-name">'+c.name+'</div><div class="ri-company">'+(c.company||'')+'</div></div>'+
       '<span class="ri-prep" onclick="event.stopPropagation();openPrep(\''+c.ghlId+'\')">PREP</span>'+
       '<span class="ri-city">'+c.city+'</span>'+
-    '</label>';
+    '</div>';
   }).join('');
   updateRouteBtn();
 }
@@ -1918,10 +1918,14 @@ function toggleRouteContact(el, ghlId) {
 
 function updateRouteBtn() {
   var btn = document.getElementById('launchRouteBtn');
+  if (!btn) return;
   var n = selectedRouteContacts.length;
   btn.disabled = n === 0;
   btn.style.opacity = n === 0 ? '0.4' : '1';
-  btn.innerHTML = '&#128205; Launch Route (' + n + ' selected)';
+  btn.style.boxShadow = n > 0 ? '0 0 20px rgba(198,232,78,0.4)' : 'none';
+  btn.style.transform = n > 0 ? 'scale(1)' : 'scale(0.98)';
+  btn.textContent = '';
+  btn.innerHTML = '&#128205; Launch Route' + (n > 0 ? ' — ' + n + ' stop' + (n > 1 ? 's' : '') : '');
 }
 
 function clearRouteSelection() {
@@ -2178,43 +2182,37 @@ function buildPhoneRoleplayPrompt(contact) {
 }
 
 var CLAUDE_PROJECT_ID = '019c2ee3-5e2e-7147-8c7a-bfb26ae9f33a';
+// Google Drive upload URL — set once, stored forever
 var DRIVE_UPLOAD_KEY = 'opterra_drive_script_url';
-var driveScriptUrl = localStorage.getItem(DRIVE_UPLOAD_KEY) || '';
+var driveScriptUrl = localStorage.getItem(DRIVE_UPLOAD_KEY) || 'https://script.google.com/macros/s/AKfycbwPlaceholder/exec';
+
+function configureDriveUrl() {
+  var url = prompt('Paste your Google Apps Script Web App URL:');
+  if (url && url.trim()) {
+    driveScriptUrl = url.trim();
+    localStorage.setItem(DRIVE_UPLOAD_KEY, driveScriptUrl);
+    showToast('Drive URL saved', 'Lead briefs will now upload to Google Drive', 'success');
+  }
+}
 
 function uploadLeadBrief(contact, scenario, callback) {
   var roleplayPrompt = scenario === 'walkin' ? buildWalkInRoleplayPrompt(contact) : buildPhoneRoleplayPrompt(contact);
   var filename = (contact.company || contact.name).replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() + '-' + scenario + '-brief.md';
 
-  if (!driveScriptUrl) {
-    // No Drive script configured — prompt for it
-    var url = prompt('Paste your Google Apps Script Web App URL to enable Drive uploads.\n\n(See drive-upload-script.js in the repo for setup instructions)\n\nLeave blank to download locally instead:');
-    if (url && url.trim()) {
-      driveScriptUrl = url.trim();
-      localStorage.setItem(DRIVE_UPLOAD_KEY, driveScriptUrl);
-    }
-  }
+  // Always download the MD file locally as primary method (works for all reps)
+  downloadLocalFile(filename, roleplayPrompt);
 
-  if (driveScriptUrl) {
-    // Upload to Google Drive
-    showToast('Uploading to Drive...', filename, 'success');
+  // Also try Drive upload silently if configured
+  if (driveScriptUrl && driveScriptUrl.indexOf('Placeholder') === -1) {
     fetch(driveScriptUrl, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename: filename, content: roleplayPrompt })
-    }).then(function() {
-      showToast('Saved to Google Drive', '"Client Cold Calling - Marketing Role Play" / ' + filename, 'success');
-      if (callback) callback(filename);
-    }).catch(function(err) {
-      showToast('Drive upload failed', 'Downloading locally instead', 'error');
-      downloadLocalFile(filename, roleplayPrompt);
-      if (callback) callback(filename);
-    });
-  } else {
-    // Fallback: download locally
-    downloadLocalFile(filename, roleplayPrompt);
-    if (callback) callback(filename);
+    }).catch(function() {}); // silent fail
   }
+
+  if (callback) callback(filename);
 }
 
 function downloadLocalFile(filename, content) {
@@ -2264,9 +2262,9 @@ setTimeout(function() { populateRouteCheckboxes(); }, 100);
 
 <div class="call-prompt-overlay" id="agentLauncher" onclick="if(event.target===this)this.classList.remove('active')">
   <div class="call-prompt" style="max-width:360px">
-    <h3 style="margin-bottom:8px">Lead brief saved</h3>
+    <h3 style="margin-bottom:8px">Lead brief ready</h3>
     <div class="cp-sub" style="margin-bottom:6px"><span id="agentLauncherName"></span></div>
-    <div style="color:var(--text);font-size:13px;margin-bottom:20px;line-height:1.5">The brief is in your Google Drive folder <strong style="color:var(--lime)">Client Cold Calling - Marketing Role Play</strong>. The Sales Training Agent can reference it from there.</div>
+    <div style="color:var(--text);font-size:13px;margin-bottom:20px;line-height:1.5">The brief downloaded to your phone. Open the Sales Training Agent and attach it using the <strong style="color:var(--lime)">+</strong> button to start your roleplay.</div>
     <div class="cp-buttons">
       <button class="cp-btn cp-demo" onclick="openSalesAgent()" style="justify-content:center;font-size:16px;padding:18px">Open Sales Training Agent</button>
       <button class="cp-btn cp-skip" onclick="document.getElementById('agentLauncher').classList.remove('active')">I'll do it later</button>
