@@ -231,6 +231,8 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
 .phone-dot.dot-demo { background:var(--green); }
 .phone-dot.dot-lead { background:var(--lime); }
 .phone-status a:hover, .df-value a[href^="tel:"]:hover { color:var(--lime) !important; text-decoration:underline; }
+.table-prep-btn { background:rgba(198,232,78,0.1); border:1px solid var(--lime); color:var(--lime); padding:5px 12px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; font-family:'Montserrat',sans-serif; white-space:nowrap; transition:all 0.15s; }
+.table-prep-btn:hover { background:var(--lime); color:var(--forest); }
 .call-prompt-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
 .call-prompt-overlay.active { display:flex; }
 .call-prompt { background:var(--surface2); border:1px solid var(--border); border-radius:16px; padding:28px 24px; max-width:340px; width:90%; text-align:center; }
@@ -318,6 +320,9 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
   .call-prompt h3 { font-size:18px; }
   .call-prompt .cp-btn { padding:16px 14px; font-size:15px; border-radius:12px; }
   .call-prompt .cp-btn .cp-icon { width:36px; height:36px; font-size:18px; }
+
+  /* Table prep button mobile */
+  .table-prep-btn { padding:8px 14px; font-size:12px; }
 
   /* Phone numbers - bigger tap targets */
   .phone-status a { padding:4px 0; display:inline-block; font-size:13px; }
@@ -528,7 +533,7 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
     <div class="table-scroll">
       <table id="flTable">
         <thead><tr>
-          <th onclick="sortTable(0)">Contact</th><th onclick="sortTable(1)">Company</th><th onclick="sortTable(2)">City</th><th>Phone / Status</th><th>Email</th><th>Segment</th><th onclick="sortTable(6)">Added</th>
+          <th onclick="sortTable(0)">Contact</th><th onclick="sortTable(1)">Company</th><th onclick="sortTable(2)">City</th><th></th><th>Phone / Status</th><th>Email</th><th>Segment</th><th onclick="sortTable(7)">Added</th>
         </tr></thead>
         <tbody id="flBody"></tbody>
       </table>
@@ -1083,6 +1088,7 @@ function renderTable(data) {
       '<td class="clickable" onclick="openDetail('+i+')"><strong>'+c.name+'</strong></td>'+
       '<td>'+(c.company||'—')+'</td>'+
       '<td>'+c.city+'</td>'+
+      '<td><button class="table-prep-btn" onclick="event.stopPropagation();openPhonePrep('+i+')">Prep</button></td>'+
       '<td><div class="phone-status"><span class="phone-dot '+dotClass+'"></span>'+formatPhone(c.phone)+'</div>'+
       '<select class="'+selClass+'" onchange="setPhoneStatus('+i+',this)">'+
         '<option value=""'+(!status?' selected':'')+'>Status...</option>'+
@@ -2021,32 +2027,65 @@ function closePrep() {
   document.getElementById('prepOverlay').classList.remove('active');
 }
 
-function buildRoleplayPrompt(contact) {
+// Walk-in roleplay (from Route Planner — in-person guerrilla marketing)
+function buildWalkInRoleplayPrompt(contact) {
   var biz = detectBusinessType(contact);
   return 'You are ' + contact.name + ', the owner of ' + (contact.company || 'a ' + biz.label.toLowerCase()) + ' in ' + (contact.city || 'the area') + '.\n\n' +
-    'I am a sales rep for Opterra, a company that builds custom AI-powered automations for wellness business owners. Our core offer is the Founders Circle — members tell us what repetitive tasks eat their week, and we build custom automations to fix it. It\'s done-for-you, not another tool to learn.\n\n' +
+    'I am a sales rep for Opterra doing guerrilla marketing — walking into businesses in person. Our core offer is the Founders Circle — members tell us what repetitive tasks eat their week, and we build custom AI-powered automations to fix it. Done-for-you, not another tool to learn.\n\n' +
     'ROLEPLAY RULES:\n' +
-    '- Stay in character as ' + contact.name + ' the entire time\n' +
-    '- Be realistic — you\'re busy, skeptical, and protective of your time\n' +
-    '- Start somewhat guarded (I just walked into your business uninvited)\n' +
-    '- Throw real objections that a ' + biz.label.toLowerCase() + ' owner would have: ' + biz.objections.join(', ') + '\n' +
+    '- Stay in character the entire time\n' +
+    '- SCENARIO: I just walked into ' + (contact.company || 'your business') + ' uninvited. You might not be at the front desk — I might hit a receptionist or gatekeeper first\n' +
+    '- If a gatekeeper answers, play as them first (protective, screening visitors). Make me earn access to the owner\n' +
+    '- Once I get to you (the owner), be realistic — busy, skeptical, protective of your time\n' +
+    '- Throw real objections a ' + biz.label.toLowerCase() + ' owner would have: ' + biz.objections.join(', ') + '\n' +
     '- Your real pain points are: ' + biz.painPoints.join(', ') + '\n' +
     '- If I handle objections well, gradually warm up\n' +
-    '- If I fumble, give me honest feedback in [brackets] then continue the roleplay\n' +
-    '- After the conversation ends (I close or fail), break character and give me a scorecard: what I did well, what to improve, and a suggested rewrite of my weakest moment\n' +
+    '- If I fumble, give honest feedback in [brackets] then continue\n' +
+    '- After the conversation ends, break character and give me a scorecard: what I did well, what to improve, and a suggested rewrite of my weakest moment\n' +
     '- Use the tr-objection-handling-skill for realistic objection patterns and recommended rebuttals\n\n' +
-    'I\'m walking into your business right now. You\'re at the front desk. Go.';
+    'I just walked through the front door of ' + (contact.company || 'your business') + '. Go.';
+}
+
+// Phone call roleplay (from Contacts table — cold calling)
+function buildPhoneRoleplayPrompt(contact) {
+  var biz = detectBusinessType(contact);
+  return 'You are ' + contact.name + ', the owner of ' + (contact.company || 'a ' + biz.label.toLowerCase()) + ' in ' + (contact.city || 'the area') + '.\n\n' +
+    'I am a sales rep for Opterra cold calling you on the phone. Our core offer is the Founders Circle — members tell us what repetitive tasks eat their week, and we build custom AI-powered automations to fix it. Done-for-you, not another tool to learn.\n\n' +
+    'ROLEPLAY RULES:\n' +
+    '- Stay in character the entire time\n' +
+    '- SCENARIO: This is a COLD CALL. I\'m calling ' + (contact.company || 'your business') + ' out of the blue\n' +
+    '- A receptionist or staff member might answer first — play as them (screening calls, taking messages, deflecting salespeople)\n' +
+    '- If I get through to you (the owner), you\'re mid-task and mildly annoyed by the interruption\n' +
+    '- You\'re harder to keep on the phone than in person — you can hang up at any time\n' +
+    '- I need to hook you in the first 10 seconds or you\'re gone\n' +
+    '- Throw real objections a ' + biz.label.toLowerCase() + ' owner would have: ' + biz.objections.join(', ') + '\n' +
+    '- Also use phone-specific objections: "Can you email me instead?", "I\'m with a client right now", "How did you get this number?", "We\'re not interested"\n' +
+    '- Your real pain points are: ' + biz.painPoints.join(', ') + '\n' +
+    '- If I handle objections well, give me more time\n' +
+    '- If I fumble, give honest feedback in [brackets] then continue\n' +
+    '- After the call ends, break character and give me a scorecard: what I did well, what to improve, and a suggested rewrite of my weakest moment\n' +
+    '- Use the tr-objection-handling-skill for realistic objection patterns and recommended rebuttals\n\n' +
+    '*Ring ring* — the phone is ringing at ' + (contact.company || 'the business') + '. Someone picks up. Go.';
 }
 
 var CLAUDE_PROJECT_ID = '019c2ee3-5e2e-7147-8c7a-bfb26ae9f33a';
 
 function launchClaudeRoleplay() {
   if (!currentPrepContact) return;
-  var prompt = buildRoleplayPrompt(currentPrepContact);
+  var prompt = buildWalkInRoleplayPrompt(currentPrepContact);
   var url = 'https://claude.ai/project/' + CLAUDE_PROJECT_ID + '?q=' + encodeURIComponent(prompt);
   window.open(url, '_blank');
-  showToast('Roleplay started', 'Claude is playing as ' + currentPrepContact.name + ' — go practice!', 'success');
+  showToast('Walk-in roleplay started', 'Practice pitching ' + currentPrepContact.name + ' in person', 'success');
   closePrep();
+}
+
+function openPhonePrep(idx) {
+  var c = floridaContacts[idx];
+  if (!c) return;
+  var prompt = buildPhoneRoleplayPrompt(c);
+  var url = 'https://claude.ai/project/' + CLAUDE_PROJECT_ID + '?q=' + encodeURIComponent(prompt);
+  window.open(url, '_blank');
+  showToast('Cold call roleplay started', 'Practice calling ' + c.name + ' at ' + (c.company || 'their business'), 'success');
 }
 
 // Initial populate
