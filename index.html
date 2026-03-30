@@ -297,13 +297,21 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
   #launchRouteBtn { width:100%; padding:16px 20px; font-size:15px; border-radius:12px; }
 
   /* Prep panel mobile */
-  .prep-panel { max-width:100%; border-radius:12px; }
-  .prep-header { padding:16px 14px 12px; }
-  .prep-body { padding:16px 14px; }
-  .prep-section p, .prep-section li { font-size:14px; }
-  .prep-actions { flex-direction:column; }
-  .prep-btn { min-width:100%; padding:16px; font-size:15px; }
+  .prep-overlay { padding:10px; align-items:flex-end; }
+  .prep-panel { max-width:100%; border-radius:16px 16px 0 0; max-height:90vh; }
+  .prep-header { padding:18px 16px 14px; }
+  .prep-header h3 { font-size:18px; }
+  .prep-body { padding:16px; }
+  .prep-section h4 { font-size:12px; }
+  .prep-section p, .prep-section li { font-size:14px; line-height:1.6; }
+  .prep-actions { flex-direction:column; padding:16px; gap:10px; position:sticky; bottom:0; background:var(--surface2); }
+  .prep-btn { min-width:100%; padding:18px; font-size:16px; border-radius:12px; }
+  .prep-btn-claude { font-size:17px; }
   .ri-prep { padding:8px 14px; font-size:12px; }
+
+  /* Route items mobile - stack prep + city vertically */
+  .route-item { flex-wrap:wrap; }
+  .route-item .ri-city { font-size:11px; }
 
   /* Post-call prompt mobile */
   .call-prompt { padding:24px 16px; max-width:100%; width:92%; border-radius:14px; }
