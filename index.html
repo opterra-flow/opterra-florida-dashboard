@@ -2197,29 +2197,47 @@ function downloadLeadBrief(contact, scenario) {
   return filename;
 }
 
+function showAgentLauncher(contactName) {
+  var launcher = document.getElementById('agentLauncher');
+  var nameEl = document.getElementById('agentLauncherName');
+  nameEl.textContent = contactName;
+  launcher.classList.add('active');
+}
+
+function openSalesAgent() {
+  document.getElementById('agentLauncher').classList.remove('active');
+  window.open('https://claude.ai/project/' + CLAUDE_PROJECT_ID, '_blank');
+}
+
 function launchClaudeRoleplay() {
   if (!currentPrepContact) return;
-  var filename = downloadLeadBrief(currentPrepContact, 'walkin');
-  showToast('Lead brief downloaded', 'Attach "' + filename + '" in the Claude chat using the + button', 'success');
-  setTimeout(function() {
-    window.open('https://claude.ai/project/' + CLAUDE_PROJECT_ID, '_blank');
-  }, 500);
+  downloadLeadBrief(currentPrepContact, 'walkin');
   closePrep();
+  showAgentLauncher(currentPrepContact.name);
 }
 
 function openPhonePrep(idx) {
   var c = floridaContacts[idx];
   if (!c) return;
-  var filename = downloadLeadBrief(c, 'phone');
-  showToast('Lead brief downloaded', 'Attach "' + filename + '" in the Claude chat using the + button', 'success');
-  setTimeout(function() {
-    window.open('https://claude.ai/project/' + CLAUDE_PROJECT_ID, '_blank');
-  }, 500);
+  downloadLeadBrief(c, 'phone');
+  showAgentLauncher(c.name);
 }
 
 // Initial populate
 setTimeout(function() { populateRouteCheckboxes(); }, 100);
 </script>
+
+<div class="call-prompt-overlay" id="agentLauncher" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="call-prompt" style="max-width:360px">
+    <h3 style="margin-bottom:8px">Lead brief downloaded</h3>
+    <div class="cp-sub" style="margin-bottom:6px"><span id="agentLauncherName"></span></div>
+    <div style="color:var(--text);font-size:13px;margin-bottom:20px;line-height:1.5">The MD file is in your downloads. When you open the Sales Training Agent, tap the <strong style="color:var(--lime)">+</strong> button and attach it.</div>
+    <div class="cp-buttons">
+      <button class="cp-btn cp-demo" onclick="openSalesAgent()" style="justify-content:center;font-size:16px;padding:18px">Open Sales Training Agent</button>
+      <button class="cp-btn cp-skip" onclick="document.getElementById('agentLauncher').classList.remove('active')">I'll do it later</button>
+    </div>
+  </div>
+</div>
 
 <div class="prep-overlay" id="prepOverlay" onclick="if(event.target===this)closePrep()">
   <div class="prep-panel">
