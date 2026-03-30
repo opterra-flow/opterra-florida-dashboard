@@ -2025,32 +2025,19 @@ function buildRoleplayPrompt(contact) {
     '- Your real pain points are: ' + biz.painPoints.join(', ') + '\n' +
     '- If I handle objections well, gradually warm up\n' +
     '- If I fumble, give me honest feedback in [brackets] then continue the roleplay\n' +
-    '- After the conversation ends (I close or fail), break character and give me a scorecard: what I did well, what to improve, and a suggested rewrite of my weakest moment\n\n' +
+    '- After the conversation ends (I close or fail), break character and give me a scorecard: what I did well, what to improve, and a suggested rewrite of my weakest moment\n' +
+    '- Use the tr-objection-handling-skill for realistic objection patterns and recommended rebuttals\n\n' +
     'I\'m walking into your business right now. You\'re at the front desk. Go.';
 }
+
+var CLAUDE_PROJECT_ID = '019c2ee3-5e2e-7147-8c7a-bfb26ae9f33a';
 
 function launchClaudeRoleplay() {
   if (!currentPrepContact) return;
   var prompt = buildRoleplayPrompt(currentPrepContact);
-
-  // Copy to clipboard
-  navigator.clipboard.writeText(prompt).then(function() {
-    showToast('Prompt copied!', 'Paste it into Claude to start the roleplay', 'success');
-  }).catch(function() {
-    // Fallback: select from a textarea
-    var ta = document.createElement('textarea');
-    ta.value = prompt;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast('Prompt copied!', 'Paste it into Claude to start the roleplay', 'success');
-  });
-
-  // Open Claude.ai
-  setTimeout(function() {
-    window.open('https://claude.ai/new', '_blank');
-  }, 300);
+  var url = 'https://claude.ai/project/' + CLAUDE_PROJECT_ID + '?q=' + encodeURIComponent(prompt);
+  window.open(url, '_blank');
+  showToast('Roleplay started', 'Claude is playing as ' + currentPrepContact.name + ' — go practice!', 'success');
   closePrep();
 }
 
