@@ -255,6 +255,28 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
 .route-item .ri-city { font-size:11px; color:var(--gold); margin-left:auto; white-space:nowrap; }
 .route-item .ri-num { width:22px; height:22px; border-radius:50%; background:var(--lime); color:var(--forest); font-size:11px; font-weight:700; display:none; align-items:center; justify-content:center; flex-shrink:0; }
 .route-item.selected .ri-num { display:flex; }
+.ri-prep { display:none; padding:6px 12px; background:rgba(198,232,78,0.15); border:1px solid var(--lime); color:var(--lime); border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; font-family:'Montserrat',sans-serif; transition:all 0.15s; }
+.ri-prep:hover { background:var(--lime); color:var(--forest); }
+.route-item.selected .ri-prep { display:block; }
+
+/* Prep overlay */
+.prep-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9998; align-items:center; justify-content:center; backdrop-filter:blur(4px); padding:16px; }
+.prep-overlay.active { display:flex; }
+.prep-panel { background:var(--surface2); border:1px solid var(--border); border-radius:16px; max-width:480px; width:100%; max-height:85vh; overflow-y:auto; }
+.prep-header { padding:20px 20px 16px; border-bottom:1px solid var(--border); }
+.prep-header h3 { color:var(--lime); margin:0 0 2px; font-size:16px; }
+.prep-header .prep-company { color:var(--text-dim); font-size:13px; }
+.prep-body { padding:20px; }
+.prep-section { margin-bottom:18px; }
+.prep-section h4 { color:var(--gold); font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin:0 0 8px; }
+.prep-section p, .prep-section li { color:var(--text); font-size:13px; line-height:1.5; }
+.prep-section ul { margin:0; padding-left:18px; }
+.prep-section li { margin-bottom:4px; }
+.prep-actions { padding:16px 20px; border-top:1px solid var(--border); display:flex; gap:10px; flex-wrap:wrap; }
+.prep-btn { padding:14px 20px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:'Montserrat',sans-serif; border:none; flex:1; min-width:140px; text-align:center; transition:all 0.15s; }
+.prep-btn:active { transform:scale(0.97); }
+.prep-btn-claude { background:var(--lime); color:var(--forest); }
+.prep-btn-close { background:var(--surface); color:var(--text-dim); border:1px solid var(--border) !important; }
 #confettiCanvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:99999; }
 
 /* ── Mobile-first responsive ── */
@@ -273,6 +295,15 @@ td.clickable:hover strong { color:var(--accent); text-decoration:underline; }
   .route-item .ri-num { width:24px; height:24px; font-size:12px; }
   .route-item input[type="checkbox"] { width:22px; height:22px; }
   #launchRouteBtn { width:100%; padding:16px 20px; font-size:15px; border-radius:12px; }
+
+  /* Prep panel mobile */
+  .prep-panel { max-width:100%; border-radius:12px; }
+  .prep-header { padding:16px 14px 12px; }
+  .prep-body { padding:16px 14px; }
+  .prep-section p, .prep-section li { font-size:14px; }
+  .prep-actions { flex-direction:column; }
+  .prep-btn { min-width:100%; padding:16px; font-size:15px; }
+  .ri-prep { padding:8px 14px; font-size:12px; }
 
   /* Post-call prompt mobile */
   .call-prompt { padding:24px 16px; max-width:100%; width:92%; border-radius:14px; }
@@ -1848,6 +1879,7 @@ function populateRouteCheckboxes() {
       '<input type="checkbox" '+(checked?'checked':'')+' onclick="event.stopPropagation()">'+
       '<span class="ri-num">'+order+'</span>'+
       '<div style="flex:1;min-width:0"><div class="ri-name">'+c.name+'</div><div class="ri-company">'+(c.company||'')+'</div></div>'+
+      '<span class="ri-prep" onclick="event.stopPropagation();openPrep(\''+c.ghlId+'\')">PREP</span>'+
       '<span class="ri-city">'+c.city+'</span>'+
     '</label>';
   }).join('');
@@ -1918,10 +1950,127 @@ filterByTerritory = function(t) {
   populateRouteCheckboxes();
 };
 
+// ── Prep Mode / Roleplay ──
+var currentPrepContact = null;
+
+var BUSINESS_TYPES = {
+  'med-spa': { label: 'Med Spa', painPoints: ['Managing appointment no-shows', 'Staff scheduling across multiple providers', 'Client follow-up and rebooking', 'Tracking product inventory and reorders'], objections: ['We already use a booking system', 'I don\'t have time to learn new software', 'We\'re too small for automation'] },
+  'holistic_medical': { label: 'Holistic Medical', painPoints: ['Patient intake paperwork', 'Insurance billing complexity', 'Follow-up scheduling', 'Managing treatment plans across visits'], objections: ['We prefer the personal touch', 'Our patients expect hands-on communication', 'We\'ve been burned by tech before'] },
+  'chiro': { label: 'Chiropractic', painPoints: ['Repetitive patient check-in process', 'Appointment reminders eating staff time', 'Tracking patient visit frequency', 'Managing multiple locations'], objections: ['My front desk handles everything fine', 'Patients prefer calling in', 'What if the automation feels impersonal?'] },
+  'acupuncture': { label: 'Acupuncture', painPoints: ['Intake forms and health history management', 'Follow-up scheduling between treatments', 'Client education and aftercare communication', 'Building consistent rebooking habits'], objections: ['My practice is small and manageable', 'I handle scheduling myself', 'My clients are very specific about communication'] },
+  'massage_therapy': { label: 'Massage / Bodywork', painPoints: ['Booking management across multiple therapists', 'Last-minute cancellations and fill-ins', 'Client retention and rebooking', 'Managing reviews and reputation'], objections: ['We use MindBody/Vagaro already', 'I\'m a solo practitioner', 'My clients are mostly word-of-mouth'] },
+  'default': { label: 'Wellness Business', painPoints: ['Repetitive admin tasks eating your week', 'Tools that don\'t talk to each other', 'Client follow-up falling through cracks', 'Spending more time on operations than clients'], objections: ['We already have systems in place', 'I don\'t have time to switch', 'What makes you different from other tools?'] }
+};
+
+function detectBusinessType(contact) {
+  var tags = (contact.tags || []).join(' ').toLowerCase();
+  var company = (contact.company || '').toLowerCase();
+  if (tags.indexOf('med-spa') !== -1 || tags.indexOf('med_spa') !== -1 || company.indexOf('med spa') !== -1 || company.indexOf('medspa') !== -1 || company.indexOf('aesthet') !== -1) return BUSINESS_TYPES['med-spa'];
+  if (tags.indexOf('chiro') !== -1 || company.indexOf('chiro') !== -1) return BUSINESS_TYPES['chiro'];
+  if (tags.indexOf('acupuncture') !== -1 || company.indexOf('acupuncture') !== -1 || company.indexOf('acupun') !== -1) return BUSINESS_TYPES['acupuncture'];
+  if (tags.indexOf('massage') !== -1 || company.indexOf('massage') !== -1 || company.indexOf('bodywork') !== -1 || company.indexOf('spa') !== -1) return BUSINESS_TYPES['massage_therapy'];
+  if (tags.indexOf('holistic') !== -1 || company.indexOf('holistic') !== -1 || company.indexOf('wellness') !== -1 || company.indexOf('functional') !== -1) return BUSINESS_TYPES['holistic_medical'];
+  return BUSINESS_TYPES['default'];
+}
+
+function openPrep(ghlId) {
+  var c = floridaContacts.find(function(x) { return x.ghlId === ghlId; });
+  if (!c) return;
+  currentPrepContact = c;
+  var biz = detectBusinessType(c);
+
+  document.getElementById('prepName').textContent = c.name;
+  document.getElementById('prepCompany').textContent = (c.company || '') + (c.city ? ' — ' + c.city : '');
+
+  var html = '<div class="prep-section">' +
+    '<h4>Your Opening Line</h4>' +
+    '<p>"Hey, I\'m [name] with Opterra. We work with ' + biz.label.toLowerCase() + ' owners in ' + (c.city || 'the area') +
+    ' — we kept hearing the same thing from folks like you, so we built something to fix it. Got 2 minutes?"</p>' +
+    '</div>';
+
+  html += '<div class="prep-section"><h4>Their Likely Pain Points</h4><ul>' +
+    biz.painPoints.map(function(p) { return '<li>' + p + '</li>'; }).join('') +
+    '</ul></div>';
+
+  html += '<div class="prep-section"><h4>Founders Circle Pitch</h4>' +
+    '<p>"We don\'t sell software — we build custom automations around how YOU actually run your business. ' +
+    'Our Founders Circle members tell us what\'s eating their time, and we build the fix. It\'s like having a magic wand for all the back-office stuff you hate."</p>' +
+    '</div>';
+
+  html += '<div class="prep-section"><h4>Objections You\'ll Hear</h4><ul>' +
+    biz.objections.map(function(o) { return '<li><strong>"' + o + '"</strong></li>'; }).join('') +
+    '</ul></div>';
+
+  html += '<div class="prep-section"><h4>Close</h4>' +
+    '<p>"We\'re onboarding a small group of ' + biz.label.toLowerCase() + ' owners right now — Founders Circle gets a voice in what we build next. Can I book you a 15-min demo to show you what it looks like for a business like ' +
+    (c.company || 'yours') + '?"</p></div>';
+
+  document.getElementById('prepBody').innerHTML = html;
+  document.getElementById('prepOverlay').classList.add('active');
+}
+
+function closePrep() {
+  document.getElementById('prepOverlay').classList.remove('active');
+}
+
+function buildRoleplayPrompt(contact) {
+  var biz = detectBusinessType(contact);
+  return 'You are ' + contact.name + ', the owner of ' + (contact.company || 'a ' + biz.label.toLowerCase()) + ' in ' + (contact.city || 'the area') + '.\n\n' +
+    'I am a sales rep for Opterra, a company that builds custom AI-powered automations for wellness business owners. Our core offer is the Founders Circle — members tell us what repetitive tasks eat their week, and we build custom automations to fix it. It\'s done-for-you, not another tool to learn.\n\n' +
+    'ROLEPLAY RULES:\n' +
+    '- Stay in character as ' + contact.name + ' the entire time\n' +
+    '- Be realistic — you\'re busy, skeptical, and protective of your time\n' +
+    '- Start somewhat guarded (I just walked into your business uninvited)\n' +
+    '- Throw real objections that a ' + biz.label.toLowerCase() + ' owner would have: ' + biz.objections.join(', ') + '\n' +
+    '- Your real pain points are: ' + biz.painPoints.join(', ') + '\n' +
+    '- If I handle objections well, gradually warm up\n' +
+    '- If I fumble, give me honest feedback in [brackets] then continue the roleplay\n' +
+    '- After the conversation ends (I close or fail), break character and give me a scorecard: what I did well, what to improve, and a suggested rewrite of my weakest moment\n\n' +
+    'I\'m walking into your business right now. You\'re at the front desk. Go.';
+}
+
+function launchClaudeRoleplay() {
+  if (!currentPrepContact) return;
+  var prompt = buildRoleplayPrompt(currentPrepContact);
+
+  // Copy to clipboard
+  navigator.clipboard.writeText(prompt).then(function() {
+    showToast('Prompt copied!', 'Paste it into Claude to start the roleplay', 'success');
+  }).catch(function() {
+    // Fallback: select from a textarea
+    var ta = document.createElement('textarea');
+    ta.value = prompt;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Prompt copied!', 'Paste it into Claude to start the roleplay', 'success');
+  });
+
+  // Open Claude.ai
+  setTimeout(function() {
+    window.open('https://claude.ai/new', '_blank');
+  }, 300);
+  closePrep();
+}
+
 // Initial populate
 setTimeout(function() { populateRouteCheckboxes(); }, 100);
 </script>
 
+<div class="prep-overlay" id="prepOverlay" onclick="if(event.target===this)closePrep()">
+  <div class="prep-panel">
+    <div class="prep-header">
+      <h3 id="prepName"></h3>
+      <div class="prep-company" id="prepCompany"></div>
+    </div>
+    <div class="prep-body" id="prepBody"></div>
+    <div class="prep-actions">
+      <button class="prep-btn prep-btn-claude" onclick="launchClaudeRoleplay()">Practice with Claude</button>
+      <button class="prep-btn prep-btn-close" onclick="closePrep()">Got it</button>
+    </div>
+  </div>
+</div>
 <canvas id="confettiCanvas" style="display:none"></canvas>
 <div class="call-prompt-overlay" id="callPromptOverlay" onclick="if(event.target===this)handleCallResult(null)">
   <div class="call-prompt">
