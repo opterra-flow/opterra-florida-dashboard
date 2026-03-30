@@ -2019,12 +2019,112 @@ function openPrep(ghlId) {
     '<p>"We\'re onboarding a small group of ' + biz.label.toLowerCase() + ' owners right now — Founders Circle gets a voice in what we build next. Can I book you a 15-min demo to show you what it looks like for a business like ' +
     (c.company || 'yours') + '?"</p></div>';
 
+  // Add intel section if we have custom field data
+  var cf = c.cf || {};
+  var intel = [];
+  if (cf.google_rating) intel.push('<strong>Google Rating:</strong> ' + cf.google_rating + (cf.review_count ? ' (' + cf.review_count + ' reviews)' : ''));
+  if (cf.team_size) intel.push('<strong>Team Size:</strong> ' + cf.team_size);
+  if (cf.years_in_business) intel.push('<strong>Years in Business:</strong> ' + cf.years_in_business);
+  if (cf.owner_title) intel.push('<strong>Owner Title:</strong> ' + cf.owner_title);
+  if (cf.primary_service) intel.push('<strong>Primary Service:</strong> ' + cf.primary_service);
+  if (cf.specialties) intel.push('<strong>Specialties:</strong> ' + cf.specialties);
+  if (cf.unique_differentiator) intel.push('<strong>What Sets Them Apart:</strong> ' + cf.unique_differentiator);
+  if (cf.target_audience) intel.push('<strong>Target Audience:</strong> ' + cf.target_audience);
+  if (cf.pain_points) intel.push('<strong>Known Pain Points:</strong> ' + cf.pain_points);
+  if (cf.personalization_hooks) intel.push('<strong>Personalization Hooks:</strong> ' + cf.personalization_hooks);
+
+  if (intel.length > 0) {
+    html += '<div class="prep-section"><h4>Intel on This Business</h4><ul>' +
+      intel.map(function(i) { return '<li>' + i + '</li>'; }).join('') + '</ul></div>';
+  }
+
+  if (c.website) {
+    html += '<div class="prep-section"><h4>Website</h4><p><a href="' + (c.website.startsWith('http') ? c.website : 'https://' + c.website) + '" target="_blank" style="color:var(--lime)">' + c.website + '</a></p></div>';
+  }
+
   document.getElementById('prepBody').innerHTML = html;
   document.getElementById('prepOverlay').classList.add('active');
 }
 
 function closePrep() {
   document.getElementById('prepOverlay').classList.remove('active');
+}
+
+// Build rich markdown lead brief from all contact data
+function buildLeadBrief(contact) {
+  var c = contact;
+  var cf = c.cf || {};
+  var segKey = getSegmentKey(c.tags);
+  var pb = PLAYBOOK[segKey] || PLAYBOOK['holistic_medical'];
+  var biz = detectBusinessType(c);
+
+  var md = '# Lead Brief: ' + c.name + '\n\n';
+  md += '## Contact Info\n';
+  md += '- **Name:** ' + c.name + '\n';
+  if (c.company) md += '- **Company:** ' + c.company + '\n';
+  if (c.city) md += '- **City:** ' + c.city + '\n';
+  if (c.state) md += '- **State:** ' + c.state + '\n';
+  if (c.phone) md += '- **Phone:** ' + c.phone + '\n';
+  if (c.email) md += '- **Email:** ' + c.email + '\n';
+  if (c.website) md += '- **Website:** ' + c.website + '\n';
+  md += '- **Segment:** ' + biz.label + '\n';
+  if (c.tags.length) md += '- **Tags:** ' + c.tags.join(', ') + '\n';
+  if (c.added) md += '- **Added:** ' + c.added + '\n';
+
+  // KPIs
+  if (cf.google_rating || cf.review_count || cf.team_size || cf.years_in_business) {
+    md += '\n## Business Stats\n';
+    if (cf.google_rating) md += '- **Google Rating:** ' + cf.google_rating + '\n';
+    if (cf.review_count) md += '- **Review Count:** ' + cf.review_count + '\n';
+    if (cf.team_size) md += '- **Team Size:** ' + cf.team_size + '\n';
+    if (cf.years_in_business) md += '- **Years in Business:** ' + cf.years_in_business + '\n';
+  }
+
+  // Leadership
+  if (cf.owner_title || cf.owner_credentials) {
+    md += '\n## Leadership\n';
+    if (cf.owner_title) md += '- **Title/Role:** ' + cf.owner_title + '\n';
+    if (cf.owner_credentials) md += '- **Credentials:** ' + cf.owner_credentials + '\n';
+  }
+
+  // Services
+  if (cf.primary_service || cf.all_services || cf.specialties) {
+    md += '\n## Services & Specialties\n';
+    if (cf.primary_service) md += '- **Primary Service:** ' + cf.primary_service + '\n';
+    if (cf.specialties) md += '- **Specialties:** ' + cf.specialties + '\n';
+    if (cf.all_services) md += '- **All Services:** ' + cf.all_services + '\n';
+  }
+
+  // About
+  if (cf.mission_statement || cf.unique_differentiator) {
+    md += '\n## About the Business\n';
+    if (cf.mission_statement) md += '- **Mission:** ' + cf.mission_statement + '\n';
+    if (cf.unique_differentiator) md += '- **What Sets Them Apart:** ' + cf.unique_differentiator + '\n';
+  }
+
+  // Market
+  if (cf.target_audience || cf.tone_of_brand) {
+    md += '\n## Market & Brand\n';
+    if (cf.target_audience) md += '- **Target Audience:** ' + cf.target_audience + '\n';
+    if (cf.tone_of_brand) md += '- **Brand Tone:** ' + cf.tone_of_brand + '\n';
+  }
+
+  // Intel
+  if (cf.pain_points) md += '\n## Pain Points (Intel)\n' + cf.pain_points + '\n';
+  if (cf.personalization_hooks) md += '\n## Personalization Hooks\n' + cf.personalization_hooks + '\n';
+  if (cf.certifications) md += '\n## Certifications\n' + cf.certifications + '\n';
+  if (cf.new_patient_offer) md += '\n## Current Offer\n' + cf.new_patient_offer + '\n';
+
+  // Playbook data
+  md += '\n## Sales Playbook (' + biz.label + ')\n';
+  md += '- **Priority:** ' + pb.priority + '\n';
+  md += '- **Opening Hook:** ' + pb.hook + '\n';
+  md += '- **Owner Profile:** ' + pb.profile + '\n';
+  md += '- **Core Pain:** ' + pb.corePain + '\n';
+  md += '- **Value Points:**\n' + pb.valuePoints.map(function(v) { return '  - ' + v; }).join('\n') + '\n';
+  md += '- **Talking Points:**\n' + pb.talkingPoints.map(function(v) { return '  - ' + v; }).join('\n') + '\n';
+
+  return md;
 }
 
 // Walk-in roleplay (from Route Planner — in-person guerrilla marketing)
@@ -2043,6 +2143,7 @@ function buildWalkInRoleplayPrompt(contact) {
     '- If I fumble, give honest feedback in [brackets] then continue\n' +
     '- After the conversation ends, break character and give me a scorecard: what I did well, what to improve, and a suggested rewrite of my weakest moment\n' +
     '- Use the tr-objection-handling-skill for realistic objection patterns and recommended rebuttals\n\n' +
+    '---\n\n' + buildLeadBrief(contact) + '\n---\n\n' +
     'I just walked through the front door of ' + (contact.company || 'your business') + '. Go.';
 }
 
@@ -2065,6 +2166,7 @@ function buildPhoneRoleplayPrompt(contact) {
     '- If I fumble, give honest feedback in [brackets] then continue\n' +
     '- After the call ends, break character and give me a scorecard: what I did well, what to improve, and a suggested rewrite of my weakest moment\n' +
     '- Use the tr-objection-handling-skill for realistic objection patterns and recommended rebuttals\n\n' +
+    '---\n\n' + buildLeadBrief(contact) + '\n---\n\n' +
     '*Ring ring* — the phone is ringing at ' + (contact.company || 'the business') + '. Someone picks up. Go.';
 }
 
