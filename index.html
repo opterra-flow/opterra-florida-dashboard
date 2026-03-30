@@ -1849,7 +1849,7 @@ function launchRoute() {
   var waypoints = addresses.slice(1, -1).map(function(a) { return encodeURIComponent(a); }).join('|');
 
   var url = 'https://www.google.com/maps/dir/?api=1&origin=' + origin + '&destination=' + destination;
-  if (waypoints) url += '&waypoints=' + waypoints;
+  if (waypoints) url += '&waypoints=optimize:true|' + waypoints;
   url += '&travelmode=driving';
 
   window.open(url, '_blank');
